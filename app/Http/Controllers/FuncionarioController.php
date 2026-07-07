@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\EnviarRecordatorioContrasenaJob;
 use App\Jobs\VerificarDocumentosPendientesJob;
 use App\Models\Funcionario;
+use App\Models\PersonaFoto;
 use App\Models\User;
 use App\Notifications\CredencialesAccesoNotification;
 use App\Rules\ArchivoPdf;
@@ -46,12 +47,27 @@ class FuncionarioController extends Controller
     {
         $core = app(CoreApiClient::class);
 
-        $funcionario->setAttribute('persona', $funcionario->persona_id ? $core->obtenerPersona($funcionario->persona_id) : null);
+        $persona = $funcionario->persona_id ? $core->obtenerPersona($funcionario->persona_id) : null;
+        $funcionario->setAttribute('persona', $this->conFoto($persona, $funcionario->foto));
         $funcionario->setAttribute('dependencia', $funcionario->dependencia_id ? $core->obtenerDependencias()->get($funcionario->dependencia_id) : null);
         $funcionario->setAttribute('sector', $funcionario->sector_id ? $core->obtenerSectores()->get($funcionario->sector_id) : null);
         $funcionario->setAttribute('nivelCargo', $funcionario->nivel_cargo_id ? $core->obtenerNivelesCargo()->get($funcionario->nivel_cargo_id) : null);
 
         return $funcionario;
+    }
+
+    /** Fusiona foto_url/foto_thumbnail_url/tiene_foto (tabla satélite persona_fotos) en el array de persona. */
+    private function conFoto(?array $persona, ?PersonaFoto $foto): ?array
+    {
+        if (! $persona) {
+            return null;
+        }
+
+        return array_merge($persona, [
+            'foto_url' => $foto?->foto_url,
+            'foto_thumbnail_url' => $foto?->foto_thumbnail_url,
+            'tiene_foto' => (bool) $foto?->foto_ruta,
+        ]);
     }
 
     public function index(Request $request)
@@ -62,7 +78,7 @@ class FuncionarioController extends Controller
 
         $perPage = $request->integer('per_page', 15);
 
-        $query = Funcionario::query()->latest();
+        $query = Funcionario::query()->with('foto')->latest();
 
         if ($request->dependencia_id) {
             $query->where('dependencia_id', $request->dependencia_id);
@@ -82,19 +98,22 @@ class FuncionarioController extends Controller
 
         $items = $funcionarios
             ->map(function ($f) use ($personas, $core) {
-                $f->setAttribute('persona', $personas->get($f->persona_id));
+                $f->setAttribute('persona', $this->conFoto($personas->get($f->persona_id), $f->foto));
                 $f->setAttribute('dependencia', $f->dependencia_id ? $core->obtenerDependencias()->get($f->dependencia_id) : null);
                 $f->setAttribute('sector', $f->sector_id ? $core->obtenerSectores()->get($f->sector_id) : null);
                 $f->setAttribute('nivelCargo', $f->nivel_cargo_id ? $core->obtenerNivelesCargo()->get($f->nivel_cargo_id) : null);
+
                 return $f;
             })
             ->filter(fn ($f) => $f->persona && ($f->persona['activo'] ?? true))
             ->when($usuariosActivos, fn (Collection $col) => $col->filter(fn ($f) => $usuariosActivos->contains($f->persona_id)))
             ->when($request->search, function (Collection $col) use ($request) {
                 $q = mb_strtolower($request->search);
+
                 return $col->filter(function ($f) use ($q) {
-                    $nombre = mb_strtolower(trim(($f->persona['nombres'] ?? '') . ' ' . ($f->persona['apellidos'] ?? '')));
+                    $nombre = mb_strtolower(trim(($f->persona['nombres'] ?? '').' '.($f->persona['apellidos'] ?? '')));
                     $cedula = mb_strtolower((string) ($f->persona['numero_identificacion'] ?? ''));
+
                     return str_contains($nombre, $q) || str_contains($cedula, $q);
                 });
             })

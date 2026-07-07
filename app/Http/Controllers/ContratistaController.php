@@ -6,6 +6,7 @@ use App\Jobs\EnviarRecordatorioContrasenaJob;
 use App\Jobs\VerificarDocumentosPendientesJob;
 use App\Models\Contratista;
 use App\Models\ContratistaRenovacionDocumento;
+use App\Models\PersonaFoto;
 use App\Models\User;
 use App\Notifications\ContratoRenovadoNotification;
 use App\Notifications\ContratoSuspendidoNotification;
@@ -56,11 +57,26 @@ class ContratistaController extends Controller
     {
         $core = app(CoreApiClient::class);
 
-        $contratista->setAttribute('persona', $contratista->persona_id ? $core->obtenerPersona($contratista->persona_id) : null);
+        $persona = $contratista->persona_id ? $core->obtenerPersona($contratista->persona_id) : null;
+        $contratista->setAttribute('persona', $this->conFoto($persona, $contratista->foto));
         $contratista->setAttribute('dependencia', $contratista->dependencia_id ? $core->obtenerDependencias()->get($contratista->dependencia_id) : null);
         $contratista->setAttribute('sector', $contratista->sector_id ? $core->obtenerSectores()->get($contratista->sector_id) : null);
 
         return $contratista;
+    }
+
+    /** Fusiona foto_url/foto_thumbnail_url/tiene_foto (tabla satélite persona_fotos) en el array de persona. */
+    private function conFoto(?array $persona, ?PersonaFoto $foto): ?array
+    {
+        if (! $persona) {
+            return null;
+        }
+
+        return array_merge($persona, [
+            'foto_url' => $foto?->foto_url,
+            'foto_thumbnail_url' => $foto?->foto_thumbnail_url,
+            'tiene_foto' => (bool) $foto?->foto_ruta,
+        ]);
     }
 
     public function index(Request $request)
@@ -72,6 +88,7 @@ class ContratistaController extends Controller
         $perPage = $request->integer('per_page', 10);
 
         $query = Contratista::query()
+            ->with('foto')
             ->when($request->dependencia_id, fn ($q) => $q->orderByDesc('es_lider'))
             ->latest();
 
@@ -102,18 +119,21 @@ class ContratistaController extends Controller
 
         $items = $contratistas
             ->map(function ($c) use ($personas, $core) {
-                $c->setAttribute('persona', $personas->get($c->persona_id));
+                $c->setAttribute('persona', $this->conFoto($personas->get($c->persona_id), $c->foto));
                 $c->setAttribute('dependencia', $c->dependencia_id ? $core->obtenerDependencias()->get($c->dependencia_id) : null);
                 $c->setAttribute('sector', $c->sector_id ? $core->obtenerSectores()->get($c->sector_id) : null);
+
                 return $c;
             })
             ->filter(fn ($c) => $c->persona && ($c->persona['activo'] ?? true))
             ->when($usuariosActivos, fn (Collection $col) => $col->filter(fn ($c) => $usuariosActivos->contains($c->persona_id)))
             ->when($request->search, function (Collection $col) use ($request) {
                 $q = mb_strtolower($request->search);
+
                 return $col->filter(function ($c) use ($q) {
-                    $nombre = mb_strtolower(trim(($c->persona['nombres'] ?? '') . ' ' . ($c->persona['apellidos'] ?? '')));
+                    $nombre = mb_strtolower(trim(($c->persona['nombres'] ?? '').' '.($c->persona['apellidos'] ?? '')));
                     $cedula = mb_strtolower((string) ($c->persona['numero_identificacion'] ?? ''));
+
                     return str_contains($nombre, $q) || str_contains($cedula, $q);
                 });
             })
@@ -714,7 +734,8 @@ class ContratistaController extends Controller
             $analisis = app(PdfApiService::class)->analyzeMinuta($ruta, $nombre);
 
             if (! $analisis || ! ($analisis['success'] ?? false)) {
-                \Log::warning("extraerDatosMinuta: sin resultado para contratista {$contratista->id} — " . ($analisis['error'] ?? 'null'));
+                \Log::warning("extraerDatosMinuta: sin resultado para contratista {$contratista->id} — ".($analisis['error'] ?? 'null'));
+
                 return;
             }
 
@@ -739,7 +760,7 @@ class ContratistaController extends Controller
                 $contratista->update($updates);
             }
         } catch (\Exception $e) {
-            \Log::error("extraerDatosMinuta error para contratista {$contratista->id}: " . $e->getMessage());
+            \Log::error("extraerDatosMinuta error para contratista {$contratista->id}: ".$e->getMessage());
         }
     }
 
