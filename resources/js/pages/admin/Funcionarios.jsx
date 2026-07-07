@@ -1,5 +1,6 @@
 // resources/js/pages/admin/Funcionarios.jsx
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import api from '../../api/axios';
 import { useTheme } from '../../hooks/useTheme';
@@ -73,7 +74,8 @@ export default function Funcionarios() {
     const [sectores, setSectores] = useState([]);
     const [nivelesCargo, setNivelesCargo] = useState([]);
     const [sectoresFiltrados, setSectoresFiltrados] = useState([]);
-    const [filtros, setFiltros] = useState({ dependencia_id: '', sector_id: '', search: '' });
+    const [searchParams] = useSearchParams();
+    const [filtros, setFiltros] = useState({ dependencia_id: '', sector_id: '', search: searchParams.get('search') || '' });
     const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, per_page: 15, total: 0 });
     const debouncedSearch = useDebounce(filtros.search);
     const [form, setForm] = useState({
@@ -89,9 +91,13 @@ export default function Funcionarios() {
     const [showPassword, setShowPassword] = useState(false);
     const [erroresCampo, setErroresCampo] = useState({});
 
-    // Verificación en vivo de cédula existente en el Core
+    // Verificación en vivo de cédula existente en el Core (asistente paso a paso, solo al crear)
+    const [verificando, setVerificando] = useState(false);
+    const [verificacionEstado, setVerificacionEstado] = useState(null); // null|'nueva'|'existente_sin_registro'|'ya_registrado'|'error_503'
     const [personaEncontrada, setPersonaEncontrada] = useState(null);
+    const [registroExistente, setRegistroExistente] = useState(null); // { tipo_registro, registro_id, registro_url }
     const [avisoVerificacionCaida, setAvisoVerificacionCaida] = useState(false);
+    const revelarResto = editando || ['nueva', 'existente_sin_registro', 'error_503'].includes(verificacionEstado);
 
     // Foto en formulario
     const [fotoFormFile, setFotoFormFile] = useState(null);
@@ -152,16 +158,24 @@ export default function Funcionarios() {
     };
 
     // Consulta si ya existe una persona con esta cédula (solo al crear, no al editar).
+    // Estados posibles: 'nueva' | 'existente_sin_registro' | 'ya_registrado' | 'error_503'.
     const verificarCedula = async (cedula) => {
         if (editando || !cedula || validarCedula(cedula)) {
-            setPersonaEncontrada(null);
             return;
         }
+        setVerificando(true);
         setAvisoVerificacionCaida(false);
         try {
             const res = await api.get('/personas/buscar-por-identificacion', { params: { numero_identificacion: cedula } });
-            const persona = res.data.persona;
-            if (persona) {
+            const { estado, persona, tipo_registro, registro_id, registro_url } = res.data;
+            setVerificacionEstado(estado);
+
+            if (estado === 'ya_registrado') {
+                setPersonaEncontrada(null);
+                setRegistroExistente({ tipo_registro, registro_id, registro_url });
+                setForm(f => ({ ...f, nombre: '', apellido: '', email: '', telefono: '', whatsapp: '' }));
+            } else if (estado === 'existente_sin_registro') {
+                setRegistroExistente(null);
                 setPersonaEncontrada(persona);
                 setForm(f => ({
                     ...f,
@@ -172,18 +186,23 @@ export default function Funcionarios() {
                     whatsapp: persona.whatsapp || '',
                 }));
             } else {
-                if (personaEncontrada) {
-                    setForm(f => ({ ...f, nombre: '', apellido: '', email: '', telefono: '', whatsapp: '' }));
-                }
                 setPersonaEncontrada(null);
+                setRegistroExistente(null);
+                setForm(f => ({ ...f, nombre: '', apellido: '', email: '', telefono: '', whatsapp: '' }));
             }
         } catch (err) {
             setPersonaEncontrada(null);
+            setRegistroExistente(null);
             if (err.response?.status === 503) {
+                setVerificacionEstado('error_503');
                 setAvisoVerificacionCaida(true);
             } else {
+                setVerificacionEstado(null);
+                setError('No se pudo verificar la cédula, intenta de nuevo.');
                 console.error('Error al verificar cédula:', err);
             }
+        } finally {
+            setVerificando(false);
         }
     };
 
@@ -272,6 +291,12 @@ export default function Funcionarios() {
         e.preventDefault();
         setError('');
 
+        // No debe poder llegar aquí con este estado (el resto del formulario está oculto),
+        // pero se guarda como defensa extra en el propio cliente.
+        if (!editando && verificacionEstado === 'ya_registrado') {
+            return;
+        }
+
         // Validar campos
         const errores = {};
 
@@ -330,7 +355,18 @@ export default function Funcionarios() {
             resetForm();
             fetchFuncionarios();
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al guardar');
+            // Defensa en profundidad del backend: si llega esta forma de 422, es el mismo
+            // caso de duplicado que ya bloquea la verificación en vivo — mostramos el mismo banner.
+            if (err.response?.status === 422 && err.response.data?.registro_url) {
+                setVerificacionEstado('ya_registrado');
+                setRegistroExistente({
+                    tipo_registro: err.response.data.tipo_registro,
+                    registro_id: err.response.data.registro_id,
+                    registro_url: err.response.data.registro_url,
+                });
+            } else {
+                setError(err.response?.data?.message || 'Error al guardar');
+            }
             // Si el backend devuelve errores de validación, también los mostramos
             if (err.response?.data?.errors) {
                 setErroresCampo(err.response.data.errors);
@@ -358,7 +394,10 @@ export default function Funcionarios() {
         });
         setErroresCampo({});
         setError('');
+        setVerificando(false);
+        setVerificacionEstado(null);
         setPersonaEncontrada(null);
+        setRegistroExistente(null);
         setAvisoVerificacionCaida(false);
         setSectoresFiltrados(sectores.filter(s => s.dependencia_id == f.dependencia_id));
         
@@ -496,7 +535,10 @@ export default function Funcionarios() {
         setShowPassword(false);
         clearFotoForm();
         setMinutaFormFile(null);
+        setVerificando(false);
+        setVerificacionEstado(null);
         setPersonaEncontrada(null);
+        setRegistroExistente(null);
         setAvisoVerificacionCaida(false);
     };
 
@@ -607,6 +649,80 @@ export default function Funcionarios() {
                             )}
                             <form onSubmit={handleSubmit} className="space-y-6">
 
+                                {/* Paso 1: verificación de identidad — solo en creación */}
+                                {!editando && (
+                                    <div>
+                                        <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Verificación de Identidad</p>
+                                        <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                                            <div className="flex-1 w-full">
+                                                <label className={labelClass}><CreditCard size={14} />Cédula *</label>
+                                                <input
+                                                    type="text"
+                                                    value={form.cedula}
+                                                    onChange={e => handleInputChange('cedula', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                                    onBlur={e => verificarCedula(e.target.value)}
+                                                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); verificarCedula(form.cedula); } }}
+                                                    className={`${inputClass} ${erroresCampo.cedula ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                                    placeholder="Cédula (máx. 10 dígitos)"
+                                                    maxLength={10}
+                                                    required
+                                                    disabled={verificando}
+                                                />
+                                                {erroresCampo.cedula && (
+                                                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                                                        <AlertCircle size={12} /> {erroresCampo.cedula}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => verificarCedula(form.cedula)}
+                                                disabled={verificando || !form.cedula}
+                                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 sm:mt-6 ${isDark ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                            >
+                                                {verificando
+                                                    ? <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
+                                                    : <Search size={16} />}
+                                                <span>Verificar</span>
+                                            </button>
+                                        </div>
+                                        <p className={`mt-2 text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                                            Ingresa el número de identificación. Vamos a verificar si esta persona ya está registrada antes de continuar.
+                                        </p>
+
+                                        {verificacionEstado === 'ya_registrado' && registroExistente && (
+                                            <div className={`mt-4 p-3 rounded-xl flex items-start gap-2 ${isDark ? 'bg-red-500/10 border border-red-500/20 text-red-300' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                                                <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                                                <span className="text-sm">
+                                                    Esta persona ya está registrada como <strong>{registroExistente.tipo_registro}</strong> en Kronox.{' '}
+                                                    <a href={registroExistente.registro_url} className="underline font-semibold inline-flex items-center gap-1">
+                                                        Ver registro existente →
+                                                    </a>
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {verificacionEstado === 'existente_sin_registro' && personaEncontrada && (
+                                            <div className={`mt-4 p-3 rounded-xl flex items-start gap-2 ${isDark ? 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-300' : 'bg-yellow-50 border border-yellow-200 text-yellow-800'}`}>
+                                                <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                                                <span className="text-sm">
+                                                    Ya existe una persona registrada con esta cédula: <strong>{personaEncontrada.nombres} {personaEncontrada.apellidos}</strong> ({personaEncontrada.email || 'sin email'}). Se vinculará este funcionario a ese registro; los datos personales no son editables abajo.
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {avisoVerificacionCaida && (
+                                            <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 ${isDark ? 'bg-gray-700/50 border border-gray-600 text-gray-300' : 'bg-gray-50 border border-gray-200 text-gray-600'}`}>
+                                                <AlertCircle size={14} />
+                                                <span className="text-xs">No se pudo verificar si esta cédula ya existe (el servicio no respondió). Puedes continuar normalmente.</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Resto del formulario: oculto hasta verificar en creación; siempre visible en edición */}
+                                {revelarResto && <>
+
                                 {/* Foto de perfil */}
                                 <div>
                                     <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Foto de Perfil</p>
@@ -644,23 +760,10 @@ export default function Funcionarios() {
                                 {/* Datos personales */}
                                 <div>
                                     <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Datos Personales</p>
-                                    {personaEncontrada && (
-                                        <div className={`mb-4 p-3 rounded-xl flex items-start gap-2 ${isDark ? 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-300' : 'bg-yellow-50 border border-yellow-200 text-yellow-800'}`}>
-                                            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-                                            <span className="text-sm">
-                                                Ya existe una persona registrada con esta cédula: <strong>{personaEncontrada.nombres} {personaEncontrada.apellidos}</strong> ({personaEncontrada.email || 'sin email'}). Se vinculará este funcionario a ese registro; los datos personales no son editables aquí.
-                                            </span>
-                                        </div>
-                                    )}
-                                    {avisoVerificacionCaida && (
-                                        <div className={`mb-4 p-3 rounded-xl flex items-center gap-2 ${isDark ? 'bg-gray-700/50 border border-gray-600 text-gray-300' : 'bg-gray-50 border border-gray-200 text-gray-600'}`}>
-                                            <AlertCircle size={14} />
-                                            <span className="text-xs">No se pudo verificar si esta cédula ya existe (el servicio no respondió). Puedes continuar normalmente.</span>
-                                        </div>
-                                    )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         <div><label className={labelClass}><User size={14} />Nombre *</label><input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={inputClass} placeholder="Nombre" required disabled={!!personaEncontrada} /></div>
                                         <div><label className={labelClass}><User size={14} />Apellido *</label><input type="text" value={form.apellido} onChange={e => setForm({ ...form, apellido: e.target.value })} className={inputClass} placeholder="Apellido" required disabled={!!personaEncontrada} /></div>
+                                        {editando && (
                                         <div>
                                             <label className={labelClass}>
                                                 <CreditCard size={14} />Cédula *
@@ -669,7 +772,6 @@ export default function Funcionarios() {
                                                 type="text"
                                                 value={form.cedula}
                                                 onChange={e => handleInputChange('cedula', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                                                onBlur={e => verificarCedula(e.target.value)}
                                                 className={`${inputClass} ${erroresCampo.cedula ? 'border-red-500 focus:ring-red-500' : ''}`}
                                                 placeholder="Cédula (máx. 10 dígitos)"
                                                 maxLength={10}
@@ -681,6 +783,7 @@ export default function Funcionarios() {
                                                 </p>
                                             )}
                                         </div>
+                                        )}
                                         <div>
                                             <label className={labelClass}>
                                                 <Mail size={14} />Email *
@@ -871,6 +974,7 @@ export default function Funcionarios() {
                                             : <><Save size={16} /><span>{editando ? 'Actualizar' : 'Guardar'}</span></>}
                                     </button>
                                 </div>
+                                </>}
                             </form>
                         </div>
                     </div>

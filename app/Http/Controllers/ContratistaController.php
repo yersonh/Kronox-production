@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\BuscaRegistroLocalDePersona;
 use App\Jobs\EnviarRecordatorioContrasenaJob;
 use App\Jobs\VerificarDocumentosPendientesJob;
 use App\Models\Contratista;
@@ -24,6 +25,8 @@ use Illuminate\Support\Str;
 
 class ContratistaController extends Controller
 {
+    use BuscaRegistroLocalDePersona;
+
     /** Roles que pueden gestionar contratistas y ver/editar sus documentos. */
     private function esGestor(Request $request): bool
     {
@@ -176,6 +179,24 @@ class ContratistaController extends Controller
         ]);
 
         $core = app(CoreApiClient::class);
+
+        // Defensa en profundidad: el frontend ya bloquea este caso, pero se re-valida
+        // aquí por si alguien llama al endpoint directamente sin pasar por la UI.
+        $tipoIdentificacionId = CoreApiClient::TIPOS_IDENTIFICACION[$request->tipo_identificacion ?? 'CC'];
+        $personaExistente = $core->buscarPersona($tipoIdentificacionId, $request->cedula);
+
+        if ($personaExistente) {
+            $registro = $this->buscarRegistroLocalDePersona($personaExistente['id']);
+
+            if ($registro) {
+                return response()->json([
+                    'message' => "Esta persona ya está registrada como {$registro['tipo']} en Kronox.",
+                    'tipo_registro' => $registro['tipo'],
+                    'registro_id' => $registro['id'],
+                    'registro_url' => $this->registroUrlLocal($registro['tipo'], $request->cedula),
+                ], 422);
+            }
+        }
 
         return DB::transaction(function () use ($request, $core) {
             $resultado = $core->buscarOCrearContratista([
