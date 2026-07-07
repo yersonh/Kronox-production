@@ -314,7 +314,7 @@ export default function CalendarioFuncionario() {
                                     <div className="flex flex-wrap gap-1.5">
                                         {eventoDetalle.invitados.slice(0, 10).map(inv => (
                                             <span key={inv.id} className={`px-2 py-0.5 rounded-full text-xs ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-                                                {inv.persona?.nombre} {inv.persona?.apellido}
+                                                {inv.persona?.nombres} {inv.persona?.apellidos}
                                             </span>
                                         ))}
                                         {eventoDetalle.invitados.length > 10 && (

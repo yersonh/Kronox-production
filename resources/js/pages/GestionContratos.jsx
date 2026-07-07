@@ -130,7 +130,7 @@ export default function GestionContratos() {
 
     // ── Reactivar ────────────────────────────────────────────────────────
     const handleReactivar = async (c) => {
-        if (!confirm(`¿Reactivar el contrato de ${c.persona?.nombre} ${c.persona?.apellido}?`)) return;
+        if (!confirm(`¿Reactivar el contrato de ${c.persona?.nombres} ${c.persona?.apellidos}?`)) return;
         try {
             await api.patch(`/contratistas/${c.id}/reactivar`);
             fetchContratistas();
@@ -234,8 +234,8 @@ export default function GestionContratos() {
                                         return (
                                             <tr key={c.id} className={`transition ${isDark ? 'hover:bg-gray-700/40' : 'hover:bg-gray-50'}`}>
                                                 <td className={`px-4 py-3 font-medium whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                                                    {c.persona?.nombre} {c.persona?.apellido}
-                                                    <p className={`text-xs font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{c.persona?.cedula}</p>
+                                                    {c.persona?.nombres} {c.persona?.apellidos}
+                                                    <p className={`text-xs font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{c.persona?.numero_identificacion}</p>
                                                 </td>
                                                 <td className={`px-4 py-3 whitespace-nowrap ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{c.numero_contrato || '—'}</td>
                                                 <td className={`px-4 py-3 whitespace-nowrap ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{c.dependencia?.nombre || '—'}</td>
@@ -320,7 +320,7 @@ export default function GestionContratos() {
                                 <RefreshCw size={18} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} />
                                 <div>
                                     <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Renovar Contrato</h3>
-                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{modalRenovar.contratista.persona?.nombre} {modalRenovar.contratista.persona?.apellido}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{modalRenovar.contratista.persona?.nombres} {modalRenovar.contratista.persona?.apellidos}</p>
                                 </div>
                             </div>
                             <button onClick={cerrarRenovar} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}><X size={18} /></button>
@@ -411,7 +411,7 @@ export default function GestionContratos() {
                                 <Ban size={18} className={isDark ? 'text-red-400' : 'text-red-600'} />
                                 <div>
                                     <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Suspender Contrato</h3>
-                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{modalSuspender.contratista.persona?.nombre} {modalSuspender.contratista.persona?.apellido}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{modalSuspender.contratista.persona?.nombres} {modalSuspender.contratista.persona?.apellidos}</p>
                                 </div>
                             </div>
                             <button onClick={cerrarSuspender} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}><X size={18} /></button>
@@ -450,7 +450,7 @@ export default function GestionContratos() {
                                 <History size={18} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
                                 <div>
                                     <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Historial Contractual</h3>
-                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{modalHistorial.contratista.persona?.nombre} {modalHistorial.contratista.persona?.apellido}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{modalHistorial.contratista.persona?.nombres} {modalHistorial.contratista.persona?.apellidos}</p>
                                 </div>
                             </div>
                             <button onClick={cerrarHistorial} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}><X size={18} /></button>

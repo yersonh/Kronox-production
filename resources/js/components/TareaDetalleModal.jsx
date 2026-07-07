@@ -189,7 +189,7 @@ export default function TareaDetalleModal({ item, tipo = 'tarea', onClose, onCum
                                     <div className="min-w-0">
                                         <p className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>Responsable</p>
                                         <p className={`text-sm font-medium truncate ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                                            {item.persona ? `${item.persona.nombre} ${item.persona.apellido}` : 'No asignado'}
+                                            {item.persona ? `${item.persona.nombres} ${item.persona.apellidos}` : 'No asignado'}
                                         </p>
                                     </div>
                                 </div>

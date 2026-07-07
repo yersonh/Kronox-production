@@ -120,8 +120,8 @@ export default function TareasList() {
     const tareasFiltradas = tareas
         .filter(t => filtroEstado === 'todos' || t.estado === filtroEstado)
         .filter(t => t.asunto?.toLowerCase().includes(busqueda.toLowerCase()) ||
-                     t.persona?.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-                     t.persona?.apellido?.toLowerCase().includes(busqueda.toLowerCase()));
+                     t.persona?.nombres?.toLowerCase().includes(busqueda.toLowerCase()) ||
+                     t.persona?.apellidos?.toLowerCase().includes(busqueda.toLowerCase()));
 
     const stats = {
         total: tareas.length,
@@ -333,7 +333,7 @@ export default function TareasList() {
                                                     )}
                                                 </td>
                                                 <td className={`px-5 py-3.5 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                                                    {t.persona ? `${t.persona.nombre} ${t.persona.apellido}` : '-'}
+                                                    {t.persona ? `${t.persona.nombres} ${t.persona.apellidos}` : '-'}
                                                 </td>
                                                 <td className="px-5 py-3.5">
                                                     {t.prioridad && (
@@ -463,7 +463,7 @@ export default function TareasList() {
                                             <div className="flex items-center gap-2 text-sm">
                                                 <User size={14} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
                                                 <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-                                                    {t.persona ? `${t.persona.nombre} ${t.persona.apellido}` : '-'}
+                                                    {t.persona ? `${t.persona.nombres} ${t.persona.apellidos}` : '-'}
                                                 </span>
                                             </div>
                                             {t.prioridad && (

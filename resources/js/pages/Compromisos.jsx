@@ -60,7 +60,7 @@ export default function Compromisos() {
         .filter(c => filtroEstado === 'todos' || c.estado === filtroEstado)
         .filter(c =>
             c.descripcion?.toLowerCase().includes(busqueda.toLowerCase()) ||
-            (typeof c.persona === 'string' ? c.persona : `${c.persona?.nombre} ${c.persona?.apellido}`)
+            (typeof c.persona === 'string' ? c.persona : `${c.persona?.nombres} ${c.persona?.apellidos}`)
                 .toLowerCase().includes(busqueda.toLowerCase())
         );
 
@@ -198,7 +198,7 @@ export default function Compromisos() {
                                     {compromisosFiltrados.map(c => {
                                         const ei = getEstadoInfo(c);
                                         const tarde = cumplidoTarde(c);
-                                        const personaLabel = typeof c.persona === 'string' ? c.persona : `${c.persona?.nombre ?? ''} ${c.persona?.apellido ?? ''}`.trim();
+                                        const personaLabel = typeof c.persona === 'string' ? c.persona : `${c.persona?.nombres ?? ''} ${c.persona?.apellidos ?? ''}`.trim();
                                         const eventoLabel  = typeof c.evento === 'string' ? c.evento : c.evento?.tema ?? '-';
                                         return (
                                             <tr key={c.id} className={`transition ${isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}`}>
@@ -255,7 +255,7 @@ export default function Compromisos() {
                             {compromisosFiltrados.map(c => {
                                 const ei = getEstadoInfo(c);
                                 const tarde = cumplidoTarde(c);
-                                const personaLabel = typeof c.persona === 'string' ? c.persona : `${c.persona?.nombre ?? ''} ${c.persona?.apellido ?? ''}`.trim();
+                                const personaLabel = typeof c.persona === 'string' ? c.persona : `${c.persona?.nombres ?? ''} ${c.persona?.apellidos ?? ''}`.trim();
                                 const eventoLabel  = typeof c.evento === 'string' ? c.evento : c.evento?.tema ?? '-';
                                 return (
                                     <div key={c.id} className={`p-4 ${isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}`}>

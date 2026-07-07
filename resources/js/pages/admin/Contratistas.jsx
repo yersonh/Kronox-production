@@ -396,8 +396,8 @@ export default function Contratistas() {
     const handleEditar = (c) => {
         setEditando(c.id);
         setForm({
-            nombre: c.persona?.nombre || '', apellido: c.persona?.apellido || '',
-            cedula: c.persona?.cedula || '', email: c.persona?.email || '',
+            nombre: c.persona?.nombres || '', apellido: c.persona?.apellidos || '',
+            cedula: c.persona?.numero_identificacion || '', email: c.persona?.email || '',
             telefono: c.persona?.telefono || '', whatsapp: c.persona?.whatsapp || '',
             dependencia_id: c.dependencia_id || '', sector_id: c.sector_id || '',
             numero_contrato: c.numero_contrato || '', objeto_contrato: c.objeto_contrato || '',
@@ -798,7 +798,7 @@ export default function Contratistas() {
     };
 
     const handleAbrirObligaciones = (c) => {
-        setModalObligaciones({ show: true, contratistaId: c.id, nombre: `${c.persona?.nombre} ${c.persona?.apellido}`, tieneMinuta: c.tiene_minuta, numeroContrato: c.numero_contrato });
+        setModalObligaciones({ show: true, contratistaId: c.id, nombre: `${c.persona?.nombres} ${c.persona?.apellidos}`, tieneMinuta: c.tiene_minuta, numeroContrato: c.numero_contrato });
         setMostrarFormObligacion(false);
         setEditandoObligacion(null);
         setFormObligacion({ descripcion: '', observaciones: '' });
@@ -1471,7 +1471,7 @@ export default function Contratistas() {
                                                                         onClick={() => setModalDetalle(c)}
                                                                         className={`text-left font-medium hover:underline transition ${isDark ? 'text-white hover:text-indigo-300' : 'text-gray-800 hover:text-indigo-600'}`}
                                                                     >
-                                                                        {c.persona?.nombre} {c.persona?.apellido}
+                                                                        {c.persona?.nombres} {c.persona?.apellidos}
                                                                     </button>
                                                                     {c.es_lider && (
                                                                         <span title={`Líder de ${c.dependencia?.nombre}`}
@@ -1482,7 +1482,7 @@ export default function Contratistas() {
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className={`px-4 py-3 whitespace-nowrap ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{c.persona?.cedula}</td>
+                                                        <td className={`px-4 py-3 whitespace-nowrap ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{c.persona?.numero_identificacion}</td>
                                                         <td className={`px-4 py-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}><span className="block max-w-[200px] truncate">{c.persona?.email}</span></td>
                                                         <td className={`px-4 py-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{c.dependencia?.nombre || '-'}</td>
                                                         <td className={`px-4 py-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{c.sector?.nombre || '-'}</td>
@@ -1518,7 +1518,7 @@ export default function Contratistas() {
                                                         <td className="px-4 py-3 whitespace-nowrap">
                                                             <div className="flex items-center gap-1">
                                                                 <button onClick={() => handleEditar(c)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-indigo-400' : 'hover:bg-gray-100 text-gray-500 hover:text-indigo-600'}`} title="Editar"><Edit size={15} /></button>
-                                                                <button onClick={() => handleAbrirModalFoto(c.id, `${c.persona?.nombre} ${c.persona?.apellido}`, c.persona?.foto_url)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-sky-400' : 'hover:bg-gray-100 text-gray-500 hover:text-sky-600'}`} title="Cambiar foto"><Camera size={15} /></button>
+                                                                <button onClick={() => handleAbrirModalFoto(c.id, `${c.persona?.nombres} ${c.persona?.apellidos}`, c.persona?.foto_url)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-sky-400' : 'hover:bg-gray-100 text-gray-500 hover:text-sky-600'}`} title="Cambiar foto"><Camera size={15} /></button>
                                                                 <button onClick={() => handleAbrirModalDocumentos(c)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-amber-400' : 'hover:bg-gray-100 text-gray-500 hover:text-amber-600'}`} title="Documentos"><FolderOpen size={15} /></button>
                                                                 <button onClick={() => handleAbrirObligaciones(c)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-violet-400' : 'hover:bg-gray-100 text-gray-500 hover:text-violet-600'}`} title="Gestionar obligaciones"><ClipboardList size={15} /></button>
                                                                 {filtros.dependencia_id && (
@@ -1532,7 +1532,7 @@ export default function Contratistas() {
                                                                         <BadgeCheck size={15} />
                                                                     </button>
                                                                 )}
-                                                                <button onClick={() => openModal(c.id, `${c.persona?.nombre} ${c.persona?.apellido}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`} title="Desactivar"><Trash2 size={15} /></button>
+                                                                <button onClick={() => openModal(c.id, `${c.persona?.nombres} ${c.persona?.apellidos}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`} title="Desactivar"><Trash2 size={15} /></button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -1565,7 +1565,7 @@ export default function Contratistas() {
                                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                                 <button type="button" onClick={() => setModalDetalle(c)}
                                                                     className={`font-semibold hover:underline text-left ${isDark ? 'text-white hover:text-indigo-300' : 'text-gray-800 hover:text-indigo-600'}`}>
-                                                                    {c.persona?.nombre} {c.persona?.apellido}
+                                                                    {c.persona?.nombres} {c.persona?.apellidos}
                                                                 </button>
                                                                 {c.es_lider && (
                                                                     <span title={`Líder de ${c.dependencia?.nombre}`}
@@ -1574,12 +1574,12 @@ export default function Contratistas() {
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <p className={`text-xs font-mono mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{c.persona?.cedula}</p>
+                                                            <p className={`text-xs font-mono mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{c.persona?.numero_identificacion}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-1">
                                                         <button onClick={() => handleEditar(c)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-indigo-400' : 'hover:bg-gray-100 text-gray-500 hover:text-indigo-600'}`}><Edit size={16} /></button>
-                                                        <button onClick={() => handleAbrirModalFoto(c.id, `${c.persona?.nombre} ${c.persona?.apellido}`, c.persona?.foto_url)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-sky-400' : 'hover:bg-gray-100 text-gray-500 hover:text-sky-600'}`}><Camera size={16} /></button>
+                                                        <button onClick={() => handleAbrirModalFoto(c.id, `${c.persona?.nombres} ${c.persona?.apellidos}`, c.persona?.foto_url)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-sky-400' : 'hover:bg-gray-100 text-gray-500 hover:text-sky-600'}`}><Camera size={16} /></button>
                                                         <button onClick={() => handleAbrirModalDocumentos(c)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-amber-400' : 'hover:bg-gray-100 text-gray-500 hover:text-amber-600'}`} title="Documentos"><FolderOpen size={16} /></button>
                                                         <button onClick={() => handleAbrirObligaciones(c)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-violet-400' : 'hover:bg-gray-100 text-gray-500 hover:text-violet-600'}`} title="Obligaciones"><ClipboardList size={16} /></button>
                                                         {filtros.dependencia_id && (
@@ -1593,7 +1593,7 @@ export default function Contratistas() {
                                                                 <BadgeCheck size={16} />
                                                             </button>
                                                         )}
-                                                        <button onClick={() => openModal(c.id, `${c.persona?.nombre} ${c.persona?.apellido}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`}><Trash2 size={16} /></button>
+                                                        <button onClick={() => openModal(c.id, `${c.persona?.nombres} ${c.persona?.apellidos}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`}><Trash2 size={16} /></button>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5 mt-2 ml-1">
@@ -1711,7 +1711,7 @@ export default function Contratistas() {
             {/* Modal documentos del contratista */}
             {modalDocumentos.show && modalDocumentos.contratista && (() => {
                 const c = modalDocumentos.contratista;
-                const nombre = `${c.persona?.nombre ?? ''} ${c.persona?.apellido ?? ''}`.trim();
+                const nombre = `${c.persona?.nombres ?? ''} ${c.persona?.apellidos ?? ''}`.trim();
                 const allDocs = [
                     { key: 'minuta', endpoint: 'minuta', label: 'Minuta de Contrato', icon: FileText, existe: c.tiene_minuta },
                     ...DOCS_CONFIG.map(d => ({ ...d, existe: c.documentos_estado?.[d.key] ?? false })),
@@ -1850,7 +1850,7 @@ export default function Contratistas() {
                                 <RefreshCw size={18} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} />
                                 <div>
                                     <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Renovar Contrato</h3>
-                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{modalRenovar.contratista.persona?.nombre} {modalRenovar.contratista.persona?.apellido}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{modalRenovar.contratista.persona?.nombres} {modalRenovar.contratista.persona?.apellidos}</p>
                                 </div>
                             </div>
                             <button onClick={handleCerrarRenovar} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}><X size={18} /></button>
@@ -1945,7 +1945,7 @@ export default function Contratistas() {
                                 <History size={18} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
                                 <div>
                                     <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>Historial Contractual</h3>
-                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{modalHistorial.contratista.persona?.nombre} {modalHistorial.contratista.persona?.apellido}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{modalHistorial.contratista.persona?.nombres} {modalHistorial.contratista.persona?.apellidos}</p>
                                 </div>
                             </div>
                             <button onClick={handleCerrarHistorial} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}><X size={18} /></button>

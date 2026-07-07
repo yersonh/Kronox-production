@@ -118,10 +118,10 @@ export default function ContratistaDetalleModal({ contratista: c, isDark, onClos
 
                     <div className="flex-1 min-w-0">
                         <h2 className={`text-xl font-bold leading-tight truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                            {c.persona?.nombre} {c.persona?.apellido}
+                            {c.persona?.nombres} {c.persona?.apellidos}
                         </h2>
                         <p className={`text-sm mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                            C.C. {c.persona?.cedula} · {c.dependencia?.nombre ?? '—'}
+                            C.C. {c.persona?.numero_identificacion} · {c.dependencia?.nombre ?? '—'}
                         </p>
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${estadoCfg.cls}`}>
@@ -229,8 +229,8 @@ export default function ContratistaDetalleModal({ contratista: c, isDark, onClos
                                 />
                             </div>
                             <div className="flex-1">
-                                {row('Nombre completo', `${c.persona?.nombre} ${c.persona?.apellido}`, <User size={15} />)}
-                                {row('Cédula',      c.persona?.cedula,    <CreditCard size={15} />)}
+                                {row('Nombre completo', `${c.persona?.nombres} ${c.persona?.apellidos}`, <User size={15} />)}
+                                {row('Cédula',      c.persona?.numero_identificacion,    <CreditCard size={15} />)}
                                 {row('Email',       c.persona?.email,     <Mail size={15} />)}
                                 {row('Teléfono',    c.persona?.telefono,  <Phone size={15} />)}
                                 {row('WhatsApp',    c.persona?.whatsapp,  <MessageCircle size={15} />)}

@@ -303,9 +303,9 @@ export default function Funcionarios() {
     const handleEditar = (f) => {
         setEditando(f.id);
         setForm({
-            nombre: f.persona?.nombre || '',
-            apellido: f.persona?.apellido || '',
-            cedula: f.persona?.cedula || '',
+            nombre: f.persona?.nombres || '',
+            apellido: f.persona?.apellidos || '',
+            cedula: f.persona?.numero_identificacion || '',
             email: f.persona?.email || '',
             telefono: f.persona?.telefono || '',
             whatsapp: f.persona?.whatsapp || '',
@@ -859,10 +859,10 @@ export default function Funcionarios() {
                                                                         onError={e => { e.target.src = '/images/imagendefault.png'; }}
                                                                     />
                                                                 </button>
-                                                                <span>{f.persona?.nombre} {f.persona?.apellido}</span>
+                                                                <span>{f.persona?.nombres} {f.persona?.apellidos}</span>
                                                             </div>
                                                         </td>
-                                                        <td className={`px-4 py-3 whitespace-nowrap ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{f.persona?.cedula}</td>
+                                                        <td className={`px-4 py-3 whitespace-nowrap ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{f.persona?.numero_identificacion}</td>
                                                         <td className={`px-4 py-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}><span className="block max-w-[180px] truncate">{f.persona?.email}</span></td>
                                                         <td className={`px-4 py-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{f.dependencia?.nombre || '-'}</td>
                                                         <td className={`px-4 py-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{f.sector?.nombre || '-'}</td>
@@ -882,13 +882,13 @@ export default function Funcionarios() {
                                                         <td className="px-4 py-3 whitespace-nowrap">
                                                             <div className="flex items-center gap-1">
                                                                 <button onClick={() => handleEditar(f)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-indigo-400' : 'hover:bg-gray-100 text-gray-500 hover:text-indigo-600'}`} title="Editar"><Edit size={15} /></button>
-                                                                <button onClick={() => handleAbrirModalFoto(f.id, `${f.persona?.nombre} ${f.persona?.apellido}`, f.persona?.foto_url)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-sky-400' : 'hover:bg-gray-100 text-gray-500 hover:text-sky-600'}`} title="Cambiar foto"><Camera size={15} /></button>
+                                                                <button onClick={() => handleAbrirModalFoto(f.id, `${f.persona?.nombres} ${f.persona?.apellidos}`, f.persona?.foto_url)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-sky-400' : 'hover:bg-gray-100 text-gray-500 hover:text-sky-600'}`} title="Cambiar foto"><Camera size={15} /></button>
                                                                 {f.tiene_minuta ? (
                                                                     <button onClick={() => handleDescargarMinuta(f.id)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-emerald-500 hover:text-emerald-400' : 'hover:bg-gray-100 text-emerald-600 hover:text-emerald-700'}`} title="Ver / Descargar minuta"><Download size={15} /></button>
                                                                 ) : (
-                                                                    <button onClick={() => handleAbrirModalMinuta(f.id, `${f.persona?.nombre} ${f.persona?.apellido}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-amber-400' : 'hover:bg-gray-100 text-gray-500 hover:text-amber-600'}`} title="Cargar minuta"><Upload size={15} /></button>
+                                                                    <button onClick={() => handleAbrirModalMinuta(f.id, `${f.persona?.nombres} ${f.persona?.apellidos}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-amber-400' : 'hover:bg-gray-100 text-gray-500 hover:text-amber-600'}`} title="Cargar minuta"><Upload size={15} /></button>
                                                                 )}
-                                                                <button onClick={() => openModal(f.id, `${f.persona?.nombre} ${f.persona?.apellido}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`} title="Desactivar"><Trash2 size={15} /></button>
+                                                                <button onClick={() => openModal(f.id, `${f.persona?.nombres} ${f.persona?.apellidos}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`} title="Desactivar"><Trash2 size={15} /></button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -922,19 +922,19 @@ export default function Funcionarios() {
                                                                 onError={e => { e.target.src = '/images/imagendefault.png'; }} />
                                                         </button>
                                                         <div>
-                                                            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{f.persona?.nombre} {f.persona?.apellido}</h3>
-                                                            <p className={`text-xs font-mono mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Cédula: {f.persona?.cedula}</p>
+                                                            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{f.persona?.nombres} {f.persona?.apellidos}</h3>
+                                                            <p className={`text-xs font-mono mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Cédula: {f.persona?.numero_identificacion}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex gap-1">
                                                         <button onClick={() => handleEditar(f)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-indigo-400' : 'hover:bg-gray-100 text-gray-500 hover:text-indigo-600'}`}><Edit size={16} /></button>
-                                                        <button onClick={() => handleAbrirModalFoto(f.id, `${f.persona?.nombre} ${f.persona?.apellido}`, f.persona?.foto_url)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-sky-400' : 'hover:bg-gray-100 text-gray-500 hover:text-sky-600'}`}><Camera size={16} /></button>
+                                                        <button onClick={() => handleAbrirModalFoto(f.id, `${f.persona?.nombres} ${f.persona?.apellidos}`, f.persona?.foto_url)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-sky-400' : 'hover:bg-gray-100 text-gray-500 hover:text-sky-600'}`}><Camera size={16} /></button>
                                                         {f.tiene_minuta ? (
                                                             <button onClick={() => handleDescargarMinuta(f.id)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-emerald-500' : 'hover:bg-gray-100 text-emerald-600'}`} title="Ver minuta"><Download size={16} /></button>
                                                         ) : (
-                                                            <button onClick={() => handleAbrirModalMinuta(f.id, `${f.persona?.nombre} ${f.persona?.apellido}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-amber-400' : 'hover:bg-gray-100 text-gray-500 hover:text-amber-600'}`} title="Cargar minuta"><Upload size={16} /></button>
+                                                            <button onClick={() => handleAbrirModalMinuta(f.id, `${f.persona?.nombres} ${f.persona?.apellidos}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-amber-400' : 'hover:bg-gray-100 text-gray-500 hover:text-amber-600'}`} title="Cargar minuta"><Upload size={16} /></button>
                                                         )}
-                                                        <button onClick={() => openModal(f.id, `${f.persona?.nombre} ${f.persona?.apellido}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`}><Trash2 size={16} /></button>
+                                                        <button onClick={() => openModal(f.id, `${f.persona?.nombres} ${f.persona?.apellidos}`)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`}><Trash2 size={16} /></button>
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1.5 mt-3 ml-1">

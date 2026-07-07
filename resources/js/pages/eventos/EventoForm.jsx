@@ -79,13 +79,13 @@ export default function EventoForm() {
                 form.dependencias.includes(Number(f.dependencia_id)) &&
                 (form.sectores.length === 0 || form.sectores.includes(Number(f.sector_id)))
             )
-            .map(f => ({ persona_id: f.persona_id, nombre: `${f.persona?.nombre ?? ''} ${f.persona?.apellido ?? ''}`.trim(), tipo: 'funcionario' }));
+            .map(f => ({ persona_id: f.persona_id, nombre: `${f.persona?.nombres ?? ''} ${f.persona?.apellidos ?? ''}`.trim(), tipo: 'funcionario' }));
         const conts = contratistas
             .filter(c =>
                 form.dependencias.includes(Number(c.dependencia_id)) &&
                 (form.sectores.length === 0 || form.sectores.includes(Number(c.sector_id)))
             )
-            .map(c => ({ persona_id: c.persona_id, nombre: `${c.persona?.nombre ?? ''} ${c.persona?.apellido ?? ''}`.trim(), tipo: 'contratista' }));
+            .map(c => ({ persona_id: c.persona_id, nombre: `${c.persona?.nombres ?? ''} ${c.persona?.apellidos ?? ''}`.trim(), tipo: 'contratista' }));
         setResponsablesFiltrados([...funcs, ...conts]);
     }, [form.dependencias, form.sectores, funcionarios, contratistas]);
 
@@ -96,7 +96,7 @@ export default function EventoForm() {
             .filter(f => form.dependencias.includes(Number(f.dependencia_id)))
             .map(f => ({
                 persona_id: f.persona_id,
-                nombre: `${f.persona?.nombre ?? ''} ${f.persona?.apellido ?? ''}`.trim(),
+                nombre: `${f.persona?.nombres ?? ''} ${f.persona?.apellidos ?? ''}`.trim(),
                 email: f.persona?.email ?? '',
                 tipo: 'funcionario',
                 sector_id: f.sector_id,
@@ -105,7 +105,7 @@ export default function EventoForm() {
             .filter(c => form.dependencias.includes(Number(c.dependencia_id)))
             .map(c => ({
                 persona_id: c.persona_id,
-                nombre: `${c.persona?.nombre ?? ''} ${c.persona?.apellido ?? ''}`.trim(),
+                nombre: `${c.persona?.nombres ?? ''} ${c.persona?.apellidos ?? ''}`.trim(),
                 email: c.persona?.email ?? '',
                 tipo: 'contratista',
                 sector_id: c.sector_id,

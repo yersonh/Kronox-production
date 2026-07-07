@@ -265,7 +265,7 @@ export default function EventoDetalleModal({ evento, onClose, isMyEventView = fa
                                                         <User size={12} className="text-indigo-500" />
                                                         <span className="font-semibold">
                                                             {typeof c.persona === 'object' 
-                                                                ? `${c.persona?.nombre} ${c.persona?.apellido}`.trim() 
+                                                                ? `${c.persona?.nombres} ${c.persona?.apellidos}`.trim() 
                                                                 : (c.persona || 'Sin asignar')}
                                                         </span>
                                                     </div>

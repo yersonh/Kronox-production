@@ -542,10 +542,10 @@ export default function EventosList() {
                                         {lista.map(inv => (
                                             <li key={inv.id} className={`px-6 py-2.5 flex items-center gap-3 ${isDark ? 'divide-gray-700/50' : 'divide-gray-100'}`}>
                                                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-                                                    {(inv.persona?.nombre?.[0] ?? '?').toUpperCase()}
+                                                    {(inv.persona?.nombres?.[0] ?? '?').toUpperCase()}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className={`text-sm font-medium truncate ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{inv.persona?.nombre} {inv.persona?.apellido}</p>
+                                                    <p className={`text-sm font-medium truncate ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{inv.persona?.nombres} {inv.persona?.apellidos}</p>
                                                     {inv.confirmado_at && (
                                                         <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{toLocalDate(inv.confirmado_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
                                                     )}

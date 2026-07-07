@@ -6,7 +6,7 @@ export default function ModalConfirmLider({ contratista, loading, onConfirm, onC
 
     if (!contratista) return null;
 
-    const nombre = `${contratista.persona?.nombre} ${contratista.persona?.apellido}`;
+    const nombre = `${contratista.persona?.nombres} ${contratista.persona?.apellidos}`;
     const dep = contratista.dependencia?.nombre || 'esta dependencia';
     const quitando = contratista.es_lider;
 

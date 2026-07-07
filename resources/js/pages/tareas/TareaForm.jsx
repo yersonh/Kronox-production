@@ -49,14 +49,14 @@ export default function TareaForm() {
             .filter(f => f.dependencia_id == form.dependencia_id && (!form.sector_id || f.sector_id == form.sector_id))
             .map(f => ({
                 persona_id: f.persona_id,
-                nombre: `${f.persona?.nombre ?? ''} ${f.persona?.apellido ?? ''}`.trim(),
+                nombre: `${f.persona?.nombres ?? ''} ${f.persona?.apellidos ?? ''}`.trim(),
                 tipo: 'funcionario',
             }));
         const conts = contratistas
             .filter(c => c.dependencia_id == form.dependencia_id && (!form.sector_id || c.sector_id == form.sector_id))
             .map(c => ({
                 persona_id: c.persona_id,
-                nombre: `${c.persona?.nombre ?? ''} ${c.persona?.apellido ?? ''}`.trim(),
+                nombre: `${c.persona?.nombres ?? ''} ${c.persona?.apellidos ?? ''}`.trim(),
                 tipo: 'contratista',
             }));
         setResponsablesFiltrados([...funcs, ...conts]);

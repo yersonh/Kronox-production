@@ -12,7 +12,7 @@ export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
             .filter(inv => inv.confirmacion === 'confirmado')
             .map(inv => ({
                 persona_id: inv.persona_id,
-                nombre: inv.persona ? `${inv.persona.nombre} ${inv.persona.apellido}`.trim() : `Persona ${inv.persona_id}`,
+                nombre: inv.persona ? `${inv.persona.nombres} ${inv.persona.apellidos}`.trim() : `Persona ${inv.persona_id}`,
                 asistio: inv.asistio ?? false,
             }))
     );
@@ -38,7 +38,7 @@ export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
         const persona = asistencias.find(a => String(a.persona_id) === String(persona_id));
         setCompromisos(prev => [...prev, {
             persona_id: Number(persona_id),
-            nombre: persona?.nombre ?? `ID ${persona_id}`,
+            nombre: persona?.nombres ?? `ID ${persona_id}`,
             descripcion: descripcion.trim(),
             fecha_limite,
         }]);
