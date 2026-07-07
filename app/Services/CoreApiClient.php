@@ -63,20 +63,31 @@ class CoreApiClient
     }
 
     /**
+     * Busca una persona existente por tipo+número de identificación, sin crear nada.
+     * Devuelve null si no existe.
+     */
+    public function buscarPersona(int $tipoIdentificacionId, string $numeroIdentificacion): ?array
+    {
+        $res = $this->client()->get('/api/personas', [
+            'tipo_identificacion_id' => $tipoIdentificacionId,
+            'numero_identificacion' => $numeroIdentificacion,
+        ]);
+        $res->throw();
+        $existentes = $res->json('data', $res->json());
+
+        return $existentes[0] ?? null;
+    }
+
+    /**
      * El Core no tiene (ni tendrá) un endpoint combinado de buscar-o-crear:
      * se busca primero por tipo+número de identificación y solo se crea si no existe.
      */
     public function buscarOCrearPersona(array $datos): array
     {
-        $res = $this->client()->get('/api/personas', [
-            'tipo_identificacion_id' => $datos['tipo_identificacion_id'],
-            'numero_identificacion' => $datos['numero_identificacion'],
-        ]);
-        $res->throw();
-        $existentes = $res->json('data', $res->json());
+        $persona = $this->buscarPersona($datos['tipo_identificacion_id'], $datos['numero_identificacion']);
 
-        if (! empty($existentes)) {
-            return $existentes[0];
+        if ($persona) {
+            return $persona;
         }
 
         $res = $this->client()->post('/api/personas', $datos);

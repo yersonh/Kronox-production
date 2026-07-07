@@ -25,6 +25,7 @@ use App\Http\Controllers\AuxiliarInformeController;
 use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\EstadisticasController;
 use App\Http\Controllers\PerfilController;
+use App\Http\Controllers\PersonaBusquedaController;
 
 // ============================================
 // RUTAS PÚBLICAS — Fotos de personas (sin auth, las fotos de perfil no son sensibles)
@@ -96,6 +97,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Personas
         Route::get('personas', [PersonaController::class, 'index']);
+        Route::get('personas/buscar-por-identificacion', [PersonaBusquedaController::class, 'buscar']);
         Route::get('personas/{personaId}', [PersonaController::class, 'show']);
         Route::delete('personas/{personaId}', [PersonaController::class, 'destroy']);
         Route::apiResource('funcionarios', FuncionarioController::class);

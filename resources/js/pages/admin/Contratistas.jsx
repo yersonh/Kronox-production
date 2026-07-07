@@ -124,6 +124,10 @@ export default function Contratistas() {
     const [showPassword, setShowPassword] = useState(false);
     const [erroresCampo, setErroresCampo] = useState({});
 
+    // Verificación en vivo de cédula existente en el Core
+    const [personaEncontrada, setPersonaEncontrada] = useState(null);
+    const [avisoVerificacionCaida, setAvisoVerificacionCaida] = useState(false);
+
     // Foto en formulario
     const [fotoFormFile, setFotoFormFile] = useState(null);
     const [fotoFormPreview, setFotoFormPreview] = useState(null);
@@ -231,6 +235,42 @@ export default function Contratistas() {
 
             return nuevosErrores;
         });
+    };
+
+    // Consulta si ya existe una persona con esta cédula (solo al crear, no al editar).
+    const verificarCedula = async (cedula) => {
+        if (editando || !cedula || validarCedula(cedula)) {
+            setPersonaEncontrada(null);
+            return;
+        }
+        setAvisoVerificacionCaida(false);
+        try {
+            const res = await api.get('/personas/buscar-por-identificacion', { params: { numero_identificacion: cedula } });
+            const persona = res.data.persona;
+            if (persona) {
+                setPersonaEncontrada(persona);
+                setForm(f => ({
+                    ...f,
+                    nombre: persona.nombres || '',
+                    apellido: persona.apellidos || '',
+                    email: persona.email || '',
+                    telefono: persona.telefono || '',
+                    whatsapp: persona.whatsapp || '',
+                }));
+            } else {
+                if (personaEncontrada) {
+                    setForm(f => ({ ...f, nombre: '', apellido: '', email: '', telefono: '', whatsapp: '' }));
+                }
+                setPersonaEncontrada(null);
+            }
+        } catch (err) {
+            setPersonaEncontrada(null);
+            if (err.response?.status === 503) {
+                setAvisoVerificacionCaida(true);
+            } else {
+                console.error('Error al verificar cédula:', err);
+            }
+        }
     };
 
     useEffect(() => {
@@ -406,7 +446,9 @@ export default function Contratistas() {
         setSectoresFiltrados(sectores.filter(s => s.dependencia_id == c.dependencia_id));
         setDependenciaTieneLider(false);
         setErroresCampo({});
-        
+        setPersonaEncontrada(null);
+        setAvisoVerificacionCaida(false);
+
         // Cargar foto existente si la tiene
         if (c.persona?.tiene_foto) {
             setFotoFormPreview(c.persona.foto_url);
@@ -450,6 +492,8 @@ export default function Contratistas() {
         setFormObligacionNueva({ descripcion: '', observaciones: '' });
         setMostrarFormObligacionNueva(false);
         setEditandoObligacionIndice(null);
+        setPersonaEncontrada(null);
+        setAvisoVerificacionCaida(false);
     };
 
     // ── Gestión de obligaciones en el formulario ─────────────────────────
@@ -1021,21 +1065,36 @@ export default function Contratistas() {
                                 {/* Datos personales */}
                                 <div>
                                     <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Datos Personales</p>
+                                    {personaEncontrada && (
+                                        <div className={`mb-4 p-3 rounded-xl flex items-start gap-2 ${isDark ? 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-300' : 'bg-yellow-50 border border-yellow-200 text-yellow-800'}`}>
+                                            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                                            <span className="text-sm">
+                                                Ya existe una persona registrada con esta cédula: <strong>{personaEncontrada.nombres} {personaEncontrada.apellidos}</strong> ({personaEncontrada.email || 'sin email'}). Se vinculará este contratista a ese registro; los datos personales no son editables aquí.
+                                            </span>
+                                        </div>
+                                    )}
+                                    {avisoVerificacionCaida && (
+                                        <div className={`mb-4 p-3 rounded-xl flex items-center gap-2 ${isDark ? 'bg-gray-700/50 border border-gray-600 text-gray-300' : 'bg-gray-50 border border-gray-200 text-gray-600'}`}>
+                                            <AlertCircle size={14} />
+                                            <span className="text-xs">No se pudo verificar si esta cédula ya existe (el servicio no respondió). Puedes continuar normalmente.</span>
+                                        </div>
+                                    )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        <div><label className={labelClass}><User size={14} />Nombre *</label><input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={inputClass} placeholder="Nombre" required /></div>
-                                        <div><label className={labelClass}><User size={14} />Apellido *</label><input type="text" value={form.apellido} onChange={e => setForm({ ...form, apellido: e.target.value })} className={inputClass} placeholder="Apellido" required /></div>
+                                        <div><label className={labelClass}><User size={14} />Nombre *</label><input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={inputClass} placeholder="Nombre" required disabled={!!personaEncontrada} /></div>
+                                        <div><label className={labelClass}><User size={14} />Apellido *</label><input type="text" value={form.apellido} onChange={e => setForm({ ...form, apellido: e.target.value })} className={inputClass} placeholder="Apellido" required disabled={!!personaEncontrada} /></div>
                                         <div>
                                             <label className={labelClass}>
                                                 <CreditCard size={14} />Cédula *
                                             </label>
-                                            <input 
-                                                type="text" 
-                                                value={form.cedula} 
-                                                onChange={e => handleInputChange('cedula', e.target.value.replace(/\D/g, '').slice(0, 10))} 
-                                                className={`${inputClass} ${erroresCampo.cedula ? 'border-red-500 focus:ring-red-500' : ''}`} 
-                                                placeholder="Cédula (máx. 10 dígitos)" 
+                                            <input
+                                                type="text"
+                                                value={form.cedula}
+                                                onChange={e => handleInputChange('cedula', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                                onBlur={e => verificarCedula(e.target.value)}
+                                                className={`${inputClass} ${erroresCampo.cedula ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                                placeholder="Cédula (máx. 10 dígitos)"
                                                 maxLength={10}
-                                                required 
+                                                required
                                             />
                                             {erroresCampo.cedula && (
                                                 <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -1047,13 +1106,14 @@ export default function Contratistas() {
                                             <label className={labelClass}>
                                                 <Mail size={14} />Email *
                                             </label>
-                                            <input 
-                                                type="email" 
-                                                value={form.email} 
-                                                onChange={e => handleInputChange('email', e.target.value)} 
-                                                className={`${inputClass} ${erroresCampo.email ? 'border-red-500 focus:ring-red-500' : ''}`} 
-                                                placeholder="correo@ejemplo.com" 
-                                                required 
+                                            <input
+                                                type="email"
+                                                value={form.email}
+                                                onChange={e => handleInputChange('email', e.target.value)}
+                                                className={`${inputClass} ${erroresCampo.email ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                                placeholder="correo@ejemplo.com"
+                                                required
+                                                disabled={!!personaEncontrada}
                                             />
                                             {erroresCampo.email && (
                                                 <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -1065,13 +1125,14 @@ export default function Contratistas() {
                                             <label className={labelClass}>
                                                 <Phone size={14} />Teléfono
                                             </label>
-                                            <input 
-                                                type="text" 
-                                                value={form.telefono} 
-                                                onChange={e => handleInputChange('telefono', e.target.value.replace(/\D/g, '').slice(0, 10))} 
-                                                className={`${inputClass} ${erroresCampo.telefono ? 'border-red-500 focus:ring-red-500' : ''}`} 
-                                                placeholder="Teléfono (10 dígitos)" 
+                                            <input
+                                                type="text"
+                                                value={form.telefono}
+                                                onChange={e => handleInputChange('telefono', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                                className={`${inputClass} ${erroresCampo.telefono ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                                placeholder="Teléfono (10 dígitos)"
                                                 maxLength={10}
+                                                disabled={!!personaEncontrada}
                                             />
                                             {erroresCampo.telefono && (
                                                 <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -1083,13 +1144,14 @@ export default function Contratistas() {
                                             <label className={labelClass}>
                                                 <MessageCircle size={14} />WhatsApp
                                             </label>
-                                            <input 
-                                                type="text" 
-                                                value={form.whatsapp} 
-                                                onChange={e => handleInputChange('whatsapp', e.target.value.replace(/\D/g, '').slice(0, 10))} 
-                                                className={`${inputClass} ${erroresCampo.whatsapp ? 'border-red-500 focus:ring-red-500' : ''}`} 
-                                                placeholder="WhatsApp (10 dígitos)" 
+                                            <input
+                                                type="text"
+                                                value={form.whatsapp}
+                                                onChange={e => handleInputChange('whatsapp', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                                                className={`${inputClass} ${erroresCampo.whatsapp ? 'border-red-500 focus:ring-red-500' : ''}`}
+                                                placeholder="WhatsApp (10 dígitos)"
                                                 maxLength={10}
+                                                disabled={!!personaEncontrada}
                                             />
                                             {erroresCampo.whatsapp && (
                                                 <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
