@@ -62,9 +62,24 @@ class CoreApiClient
         return $personas;
     }
 
+    /**
+     * El Core no tiene (ni tendrá) un endpoint combinado de buscar-o-crear:
+     * se busca primero por tipo+número de identificación y solo se crea si no existe.
+     */
     public function buscarOCrearPersona(array $datos): array
     {
-        $res = $this->client()->post('/api/personas/buscar-o-crear', $datos);
+        $res = $this->client()->get('/api/personas', [
+            'tipo_identificacion_id' => $datos['tipo_identificacion_id'],
+            'numero_identificacion' => $datos['numero_identificacion'],
+        ]);
+        $res->throw();
+        $existentes = $res->json('data', $res->json());
+
+        if (! empty($existentes)) {
+            return $existentes[0];
+        }
+
+        $res = $this->client()->post('/api/personas', $datos);
         $res->throw();
 
         return $res->json();
@@ -89,13 +104,10 @@ class CoreApiClient
 
     public function buscarOCrearFuncionario(array $datosPersona, array $datosFuncionario): array
     {
-        $res = $this->client()->post('/api/funcionarios/buscar-o-crear', [
-            'persona' => $datosPersona,
-            'funcionario' => $datosFuncionario,
-        ]);
-        $res->throw();
+        $persona = $this->buscarOCrearPersona($datosPersona);
+        $funcionario = $this->buscarOCrearPorPersonaId('/api/funcionarios', $persona['id'], $datosFuncionario);
 
-        return $res->json();
+        return ['persona' => $persona, 'funcionario' => $funcionario];
     }
 
     public function actualizarFuncionario(int $coreFuncionarioId, array $datos): array
@@ -117,13 +129,10 @@ class CoreApiClient
 
     public function buscarOCrearContratista(array $datosPersona, array $datosContratista): array
     {
-        $res = $this->client()->post('/api/contratistas/buscar-o-crear', [
-            'persona' => $datosPersona,
-            'contratista' => $datosContratista,
-        ]);
-        $res->throw();
+        $persona = $this->buscarOCrearPersona($datosPersona);
+        $contratista = $this->buscarOCrearPorPersonaId('/api/contratistas', $persona['id'], $datosContratista);
 
-        return $res->json();
+        return ['persona' => $persona, 'contratista' => $contratista];
     }
 
     public function actualizarContratista(int $coreContratistaId, array $datos): array
@@ -137,6 +146,26 @@ class CoreApiClient
     public function crearRenovacionContrato(int $coreContratistaId, array $datos): array
     {
         $res = $this->client()->post("/api/contratistas/{$coreContratistaId}/renovaciones", $datos);
+        $res->throw();
+
+        return $res->json();
+    }
+
+    /**
+     * Busca un funcionario/contratista por persona_id (GET) y solo lo crea (POST)
+     * si no existe todavía — el Core no expone una ruta combinada de buscar-o-crear.
+     */
+    private function buscarOCrearPorPersonaId(string $endpoint, int $personaId, array $datosCrear): array
+    {
+        $res = $this->client()->get($endpoint, ['persona_id' => $personaId]);
+        $res->throw();
+        $existentes = $res->json('data', $res->json());
+
+        if (! empty($existentes)) {
+            return $existentes[0];
+        }
+
+        $res = $this->client()->post($endpoint, array_merge($datosCrear, ['persona_id' => $personaId]));
         $res->throw();
 
         return $res->json();
