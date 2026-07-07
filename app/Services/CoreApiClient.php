@@ -121,6 +121,12 @@ class CoreApiClient
         return ['persona' => $persona, 'funcionario' => $funcionario];
     }
 
+    /** Busca un funcionario existente por persona_id, sin crear nada. Devuelve null si no existe. */
+    public function buscarFuncionarioPorPersona(int $personaId): ?array
+    {
+        return $this->buscarPorPersonaId('/api/funcionarios', $personaId);
+    }
+
     public function actualizarFuncionario(int $coreFuncionarioId, array $datos): array
     {
         $res = $this->client()->patch("/api/funcionarios/{$coreFuncionarioId}", $datos);
@@ -146,6 +152,12 @@ class CoreApiClient
         return ['persona' => $persona, 'contratista' => $contratista];
     }
 
+    /** Busca un contratista existente por persona_id, sin crear nada. Devuelve null si no existe. */
+    public function buscarContratistaPorPersona(int $personaId): ?array
+    {
+        return $this->buscarPorPersonaId('/api/contratistas', $personaId);
+    }
+
     public function actualizarContratista(int $coreContratistaId, array $datos): array
     {
         $res = $this->client()->patch("/api/contratistas/{$coreContratistaId}", $datos);
@@ -168,18 +180,26 @@ class CoreApiClient
      */
     private function buscarOCrearPorPersonaId(string $endpoint, int $personaId, array $datosCrear): array
     {
-        $res = $this->client()->get($endpoint, ['persona_id' => $personaId]);
-        $res->throw();
-        $existentes = $res->json('data', $res->json());
+        $existente = $this->buscarPorPersonaId($endpoint, $personaId);
 
-        if (! empty($existentes)) {
-            return $existentes[0];
+        if ($existente) {
+            return $existente;
         }
 
         $res = $this->client()->post($endpoint, array_merge($datosCrear, ['persona_id' => $personaId]));
         $res->throw();
 
         return $res->json();
+    }
+
+    /** Busca un funcionario/contratista existente por persona_id, sin crear nada. */
+    private function buscarPorPersonaId(string $endpoint, int $personaId): ?array
+    {
+        $res = $this->client()->get($endpoint, ['persona_id' => $personaId]);
+        $res->throw();
+        $existentes = $res->json('data', $res->json());
+
+        return $existentes[0] ?? null;
     }
 
     // ───────────────────────── Catálogos (cacheados: son fijos y chicos) ─────────────────────────

@@ -27,6 +27,7 @@ class PersonaBusquedaController extends Controller
         $request->validate([
             'numero_identificacion' => 'required|string',
             'tipo_identificacion' => 'nullable|in:CC,CE,TI,PA,RC,PEP',
+            'tipo_registro' => 'required|in:funcionario,contratista',
         ]);
 
         $tipoIdentificacionId = CoreApiClient::TIPOS_IDENTIFICACION[$request->tipo_identificacion ?? 'CC'];
@@ -53,6 +54,24 @@ class PersonaBusquedaController extends Controller
             ]);
         }
 
-        return response()->json(['estado' => 'existente_sin_registro', 'persona' => $persona]);
+        return response()->json([
+            'estado' => 'existente_sin_registro',
+            'persona' => $persona,
+            'registro_core_existente' => $this->registroCoreExistente($core, $persona['id'], $request->tipo_registro),
+        ]);
+    }
+
+    /**
+     * Si el Core ya tiene un funcionario/contratista para esta persona (aunque no haya
+     * vínculo local en Kronox), lo devuelve para que el frontend bloquee/precargue solo
+     * los campos que ya tienen dato — mismo patrón que con los datos de la persona.
+     */
+    private function registroCoreExistente(CoreApiClient $core, int $personaId, string $tipoRegistro): ?array
+    {
+        $campos = $tipoRegistro === 'funcionario'
+            ? $core->buscarFuncionarioPorPersona($personaId)
+            : $core->buscarContratistaPorPersona($personaId);
+
+        return $campos ? ['tipo' => $tipoRegistro, 'campos' => $campos] : null;
     }
 }

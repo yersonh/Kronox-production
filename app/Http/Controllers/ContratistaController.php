@@ -198,14 +198,24 @@ class ContratistaController extends Controller
             }
         }
 
-        // Solo se completan en el Core los campos que la persona tenía vacíos: los que ya
-        // tenían dato quedaron bloqueados en el frontend y no deben sobrescribirse aquí.
-        $datosActualizarPersona = $this->camposPersonaACompletar($personaExistente, $request, [
+        // Solo se completan en el Core los campos que la persona/contratista tenían
+        // vacíos: los que ya tenían dato quedaron bloqueados en el frontend y no deben
+        // sobrescribirse aquí. El contratista puede existir en el Core (otra app ya lo
+        // registró) aunque no haya vínculo local todavía — ese caso no bloquea, solo
+        // evita descartar en silencio el contrato que el usuario ya tenía.
+        $datosActualizarPersona = $this->camposACompletar($personaExistente, $request, [
             'nombre' => 'nombres', 'apellido' => 'apellidos', 'email' => 'email',
             'telefono' => 'telefono', 'whatsapp' => 'whatsapp',
         ]);
 
-        return DB::transaction(function () use ($request, $core, $datosActualizarPersona) {
+        // numero_contrato/objeto_contrato/fecha_inicio/fecha_fin no se piden aquí a propósito:
+        // el propio contratista los completa después desde su perfil, no el administrador al crearlo.
+        $contratistaExistente = $personaExistente ? $core->buscarContratistaPorPersona($personaExistente['id']) : null;
+        $datosActualizarContratista = $this->camposACompletar($contratistaExistente, $request, [
+            'sector_id' => 'sector_id',
+        ]);
+
+        return DB::transaction(function () use ($request, $core, $datosActualizarPersona, $datosActualizarContratista) {
             $resultado = $core->buscarOCrearContratista([
                 'nombres' => $request->nombre,
                 'apellidos' => $request->apellido,
@@ -226,12 +236,21 @@ class ContratistaController extends Controller
             $personaId = $resultado['persona']['id'];
             $coreContratistaId = $resultado['contratista']['id'];
 
-            $avisoActualizacionPersona = null;
+            $avisos = [];
+
             if (! empty($datosActualizarPersona)) {
                 try {
                     $core->actualizarPersona($personaId, $datosActualizarPersona);
                 } catch (\Throwable $e) {
-                    $avisoActualizacionPersona = 'El contratista se creó, pero los datos complementarios de la persona no se pudieron guardar.';
+                    $avisos[] = 'los datos complementarios de la persona no se pudieron guardar';
+                }
+            }
+
+            if (! empty($datosActualizarContratista)) {
+                try {
+                    $core->actualizarContratista($coreContratistaId, $datosActualizarContratista);
+                } catch (\Throwable $e) {
+                    $avisos[] = 'los datos complementarios del contrato no se pudieron guardar';
                 }
             }
 
@@ -277,7 +296,7 @@ class ContratistaController extends Controller
             VerificarDocumentosPendientesJob::dispatch($user->id)->delay(now()->addHours(72));
             VerificarDocumentosPendientesJob::dispatch($user->id)->delay(now()->addDays(7));
 
-            $contratista->setAttribute('aviso', $avisoActualizacionPersona);
+            $contratista->setAttribute('aviso', empty($avisos) ? null : 'El contratista se creó, pero '.implode(' y ', $avisos).'.');
 
             return response()->json($this->conDatosCore($contratista), 201);
         });

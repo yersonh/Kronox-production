@@ -35,24 +35,24 @@ trait BuscaRegistroLocalDePersona
     }
 
     /**
-     * Compara los campos de la persona ya existente en el Core contra lo enviado en el
-     * request y devuelve solo los que estaban vacíos allá y ahora traen un valor —
-     * los que ya tenían dato no se tocan (quedaron bloqueados en el frontend).
-     * $mapeo: ['campo_request' => 'campo_persona_en_core'].
+     * Compara los campos de un registro ya existente en el Core (persona, funcionario o
+     * contratista) contra lo enviado en el request y devuelve solo los que estaban vacíos
+     * allá y ahora traen un valor — los que ya tenían dato no se tocan (quedaron
+     * bloqueados en el frontend). $mapeo: ['campo_request' => 'campo_en_core'].
      */
-    private function camposPersonaACompletar(?array $personaExistente, Request $request, array $mapeo): array
+    private function camposACompletar(?array $registroExistente, Request $request, array $mapeo): array
     {
-        if (! $personaExistente) {
+        if (! $registroExistente) {
             return [];
         }
 
         $datos = [];
-        foreach ($mapeo as $campoRequest => $campoPersona) {
-            $enCore = $personaExistente[$campoPersona] ?? null;
+        foreach ($mapeo as $campoRequest => $campoCore) {
+            $enCore = $registroExistente[$campoCore] ?? null;
             $enviado = $request->input($campoRequest);
 
             if (blank($enCore) && filled($enviado)) {
-                $datos[$campoPersona] = $enviado;
+                $datos[$campoCore] = $enviado;
             }
         }
 

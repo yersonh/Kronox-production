@@ -32,7 +32,10 @@ const validarCedula = (cedula) => {
 // Mapea cada campo del formulario a su nombre en la persona del Core, para saber
 // individualmente cuáles ya traen dato (se bloquean) y cuáles están vacíos (se completan).
 const CAMPO_CORE = { nombre: 'nombres', apellido: 'apellidos', email: 'email', telefono: 'telefono', whatsapp: 'whatsapp' };
+const CAMPO_CORE_FUNCIONARIO = { cargo: 'cargo', sector_id: 'sector_id', nivel_cargo_id: 'nivel_cargo_id', fecha_vinculacion: 'fecha_vinculacion' };
 const esVacio = (v) => v === null || v === undefined || v === '';
+// Predicado genérico: un campo se bloquea solo si "fuente" ya tiene dato ahí, según el mapeo dado.
+const campoBloqueadoDe = (fuente, mapeo, campo) => !!fuente && !esVacio(fuente[mapeo[campo]]);
 
 const validarEmail = (email) => {
     if (!email) return 'El email es requerido';
@@ -100,12 +103,14 @@ export default function Funcionarios() {
     const [verificando, setVerificando] = useState(false);
     const [verificacionEstado, setVerificacionEstado] = useState(null); // null|'nueva'|'existente_sin_registro'|'ya_registrado'|'error_503'
     const [personaEncontrada, setPersonaEncontrada] = useState(null);
-    const [registroExistente, setRegistroExistente] = useState(null); // { tipo_registro, registro_id, registro_url }
+    const [registroExistente, setRegistroExistente] = useState(null); // { tipo_registro, registro_id, registro_url } — duplicado local, bloquea todo
+    const [registroCoreExistente, setRegistroCoreExistente] = useState(null); // { tipo, campos } — funcionario ya existe en el Core, sin vínculo local
     const [avisoVerificacionCaida, setAvisoVerificacionCaida] = useState(false);
     const [avisoPostGuardado, setAvisoPostGuardado] = useState('');
     const revelarResto = editando || ['nueva', 'existente_sin_registro', 'error_503'].includes(verificacionEstado);
-    // Un campo se bloquea solo si la persona encontrada ya tiene dato ahí; si está vacío en el Core, queda editable.
-    const campoBloqueado = (campo) => !!personaEncontrada && !esVacio(personaEncontrada[CAMPO_CORE[campo]]);
+    // Un campo se bloquea solo si la fuente (persona o funcionario del Core) ya tiene dato ahí.
+    const campoBloqueado = (campo) => campoBloqueadoDe(personaEncontrada, CAMPO_CORE, campo);
+    const campoFuncionarioBloqueado = (campo) => campoBloqueadoDe(registroCoreExistente?.campos, CAMPO_CORE_FUNCIONARIO, campo);
 
     // Foto en formulario
     const [fotoFormFile, setFotoFormFile] = useState(null);
@@ -174,17 +179,20 @@ export default function Funcionarios() {
         setVerificando(true);
         setAvisoVerificacionCaida(false);
         try {
-            const res = await api.get('/personas/buscar-por-identificacion', { params: { numero_identificacion: cedula } });
-            const { estado, persona, tipo_registro, registro_id, registro_url } = res.data;
+            const res = await api.get('/personas/buscar-por-identificacion', { params: { numero_identificacion: cedula, tipo_registro: 'funcionario' } });
+            const { estado, persona, tipo_registro, registro_id, registro_url, registro_core_existente } = res.data;
             setVerificacionEstado(estado);
 
             if (estado === 'ya_registrado') {
                 setPersonaEncontrada(null);
+                setRegistroCoreExistente(null);
                 setRegistroExistente({ tipo_registro, registro_id, registro_url });
                 setForm(f => ({ ...f, nombre: '', apellido: '', email: '', telefono: '', whatsapp: '' }));
             } else if (estado === 'existente_sin_registro') {
                 setRegistroExistente(null);
                 setPersonaEncontrada(persona);
+                setRegistroCoreExistente(registro_core_existente || null);
+                const campos = registro_core_existente?.campos || {};
                 setForm(f => ({
                     ...f,
                     nombre: persona.nombres || '',
@@ -192,15 +200,21 @@ export default function Funcionarios() {
                     email: persona.email || '',
                     telefono: persona.telefono || '',
                     whatsapp: persona.whatsapp || '',
+                    cargo: campos.cargo || '',
+                    sector_id: campos.sector_id || '',
+                    nivel_cargo_id: campos.nivel_cargo_id || '',
+                    fecha_vinculacion: campos.fecha_vinculacion ? campos.fecha_vinculacion.substring(0, 10) : '',
                 }));
             } else {
                 setPersonaEncontrada(null);
                 setRegistroExistente(null);
+                setRegistroCoreExistente(null);
                 setForm(f => ({ ...f, nombre: '', apellido: '', email: '', telefono: '', whatsapp: '' }));
             }
         } catch (err) {
             setPersonaEncontrada(null);
             setRegistroExistente(null);
+            setRegistroCoreExistente(null);
             if (err.response?.status === 503) {
                 setVerificacionEstado('error_503');
                 setAvisoVerificacionCaida(true);
@@ -408,6 +422,7 @@ export default function Funcionarios() {
         setVerificacionEstado(null);
         setPersonaEncontrada(null);
         setRegistroExistente(null);
+        setRegistroCoreExistente(null);
         setAvisoVerificacionCaida(false);
         setAvisoPostGuardado('');
         setSectoresFiltrados(sectores.filter(s => s.dependencia_id == f.dependencia_id));
@@ -550,6 +565,7 @@ export default function Funcionarios() {
         setVerificacionEstado(null);
         setPersonaEncontrada(null);
         setRegistroExistente(null);
+        setRegistroCoreExistente(null);
         setAvisoVerificacionCaida(false);
     };
 
@@ -858,6 +874,14 @@ export default function Funcionarios() {
                                 {/* Datos del cargo */}
                                 <div>
                                     <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Cargo y Dependencia</p>
+                                    {registroCoreExistente && (
+                                        <div className={`mb-4 p-3 rounded-xl flex items-start gap-2 ${isDark ? 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-300' : 'bg-yellow-50 border border-yellow-200 text-yellow-800'}`}>
+                                            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                                            <span className="text-sm">
+                                                Esta persona ya tiene un registro de funcionario en el Core (otra aplicación pudo haberlo creado). Los campos que ya tienen dato quedan bloqueados abajo; los vacíos puedes completarlos.
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         <div><label className={labelClass}><Building2 size={14} />Dependencia *</label>
                                             <select value={form.dependencia_id} onChange={e => handleDependenciaChange(e.target.value)} className={inputClass} required>
@@ -866,19 +890,19 @@ export default function Funcionarios() {
                                             </select>
                                         </div>
                                         <div><label className={labelClass}><Briefcase size={14} />Sector</label>
-                                            <select value={form.sector_id} onChange={e => setForm({ ...form, sector_id: e.target.value })} className={inputClass} disabled={!form.dependencia_id}>
+                                            <select value={form.sector_id} onChange={e => setForm({ ...form, sector_id: e.target.value })} className={inputClass} disabled={!form.dependencia_id || campoFuncionarioBloqueado('sector_id')}>
                                                 <option value="">Seleccionar sector</option>
                                                 {sectoresFiltrados.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                                             </select>
                                         </div>
-                                        <div><label className={labelClass}><Briefcase size={14} />Cargo *</label><input type="text" value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} className={inputClass} placeholder="Cargo" required /></div>
+                                        <div><label className={labelClass}><Briefcase size={14} />Cargo *</label><input type="text" value={form.cargo} onChange={e => setForm({ ...form, cargo: e.target.value })} className={inputClass} placeholder="Cargo" required disabled={campoFuncionarioBloqueado('cargo')} /></div>
                                         <div><label className={labelClass}><Award size={14} />Nivel de Cargo</label>
-                                            <select value={form.nivel_cargo_id} onChange={e => setForm({ ...form, nivel_cargo_id: e.target.value })} className={inputClass}>
+                                            <select value={form.nivel_cargo_id} onChange={e => setForm({ ...form, nivel_cargo_id: e.target.value })} className={inputClass} disabled={campoFuncionarioBloqueado('nivel_cargo_id')}>
                                                 <option value="">Seleccionar nivel</option>
                                                 {nivelesCargo.map(n => <option key={n.id} value={n.id}>{n.nombre}</option>)}
                                             </select>
                                         </div>
-                                        <div><label className={labelClass}><Calendar size={14} />Fecha de Vinculación</label><input type="date" value={form.fecha_vinculacion} onChange={e => setForm({ ...form, fecha_vinculacion: e.target.value })} className={inputClass} /></div>
+                                        <div><label className={labelClass}><Calendar size={14} />Fecha de Vinculación</label><input type="date" value={form.fecha_vinculacion} onChange={e => setForm({ ...form, fecha_vinculacion: e.target.value })} className={inputClass} disabled={campoFuncionarioBloqueado('fecha_vinculacion')} /></div>
                                     </div>
                                 </div>
 

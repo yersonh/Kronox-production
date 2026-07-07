@@ -179,14 +179,23 @@ class FuncionarioController extends Controller
             }
         }
 
-        // Solo se completan en el Core los campos que la persona tenía vacíos: los que ya
-        // tenían dato quedaron bloqueados en el frontend y no deben sobrescribirse aquí.
-        $datosActualizarPersona = $this->camposPersonaACompletar($personaExistente, $request, [
+        // Solo se completan en el Core los campos que la persona/funcionario tenían
+        // vacíos: los que ya tenían dato quedaron bloqueados en el frontend y no deben
+        // sobrescribirse aquí. El funcionario puede existir en el Core (otra app ya lo
+        // registró) aunque no haya vínculo local todavía — ese caso no bloquea, solo
+        // evita descartar en silencio el cargo/sector/etc. que el usuario ya tenía.
+        $datosActualizarPersona = $this->camposACompletar($personaExistente, $request, [
             'nombre' => 'nombres', 'apellido' => 'apellidos', 'email' => 'email',
             'telefono' => 'telefono', 'whatsapp' => 'whatsapp',
         ]);
 
-        return DB::transaction(function () use ($request, $core, $datosActualizarPersona) {
+        $funcionarioExistente = $personaExistente ? $core->buscarFuncionarioPorPersona($personaExistente['id']) : null;
+        $datosActualizarFuncionario = $this->camposACompletar($funcionarioExistente, $request, [
+            'cargo' => 'cargo', 'sector_id' => 'sector_id',
+            'nivel_cargo_id' => 'nivel_cargo_id', 'fecha_vinculacion' => 'fecha_vinculacion',
+        ]);
+
+        return DB::transaction(function () use ($request, $core, $datosActualizarPersona, $datosActualizarFuncionario) {
             $resultado = $core->buscarOCrearFuncionario([
                 'nombres' => $request->nombre,
                 'apellidos' => $request->apellido,
@@ -206,12 +215,21 @@ class FuncionarioController extends Controller
             $personaId = $resultado['persona']['id'];
             $coreFuncionarioId = $resultado['funcionario']['id'];
 
-            $avisoActualizacionPersona = null;
+            $avisos = [];
+
             if (! empty($datosActualizarPersona)) {
                 try {
                     $core->actualizarPersona($personaId, $datosActualizarPersona);
                 } catch (\Throwable $e) {
-                    $avisoActualizacionPersona = 'El funcionario se creó, pero los datos complementarios de la persona no se pudieron guardar.';
+                    $avisos[] = 'los datos complementarios de la persona no se pudieron guardar';
+                }
+            }
+
+            if (! empty($datosActualizarFuncionario)) {
+                try {
+                    $core->actualizarFuncionario($coreFuncionarioId, $datosActualizarFuncionario);
+                } catch (\Throwable $e) {
+                    $avisos[] = 'los datos complementarios del cargo no se pudieron guardar';
                 }
             }
 
@@ -247,7 +265,7 @@ class FuncionarioController extends Controller
             VerificarDocumentosPendientesJob::dispatch($user->id)->delay(now()->addHours(72));
             VerificarDocumentosPendientesJob::dispatch($user->id)->delay(now()->addDays(7));
 
-            $funcionario->setAttribute('aviso', $avisoActualizacionPersona);
+            $funcionario->setAttribute('aviso', empty($avisos) ? null : 'El funcionario se creó, pero '.implode(' y ', $avisos).'.');
 
             return response()->json($this->conDatosCore($funcionario), 201);
         });
