@@ -179,7 +179,14 @@ class FuncionarioController extends Controller
             }
         }
 
-        return DB::transaction(function () use ($request, $core) {
+        // Solo se completan en el Core los campos que la persona tenía vacíos: los que ya
+        // tenían dato quedaron bloqueados en el frontend y no deben sobrescribirse aquí.
+        $datosActualizarPersona = $this->camposPersonaACompletar($personaExistente, $request, [
+            'nombre' => 'nombres', 'apellido' => 'apellidos', 'email' => 'email',
+            'telefono' => 'telefono', 'whatsapp' => 'whatsapp',
+        ]);
+
+        return DB::transaction(function () use ($request, $core, $datosActualizarPersona) {
             $resultado = $core->buscarOCrearFuncionario([
                 'nombres' => $request->nombre,
                 'apellidos' => $request->apellido,
@@ -198,6 +205,15 @@ class FuncionarioController extends Controller
 
             $personaId = $resultado['persona']['id'];
             $coreFuncionarioId = $resultado['funcionario']['id'];
+
+            $avisoActualizacionPersona = null;
+            if (! empty($datosActualizarPersona)) {
+                try {
+                    $core->actualizarPersona($personaId, $datosActualizarPersona);
+                } catch (\Throwable $e) {
+                    $avisoActualizacionPersona = 'El funcionario se creó, pero los datos complementarios de la persona no se pudieron guardar.';
+                }
+            }
 
             $funcionario = Funcionario::create([
                 'persona_id' => $personaId,
@@ -230,6 +246,8 @@ class FuncionarioController extends Controller
             VerificarDocumentosPendientesJob::dispatch($user->id)->delay(now()->addHours(24));
             VerificarDocumentosPendientesJob::dispatch($user->id)->delay(now()->addHours(72));
             VerificarDocumentosPendientesJob::dispatch($user->id)->delay(now()->addDays(7));
+
+            $funcionario->setAttribute('aviso', $avisoActualizacionPersona);
 
             return response()->json($this->conDatosCore($funcionario), 201);
         });

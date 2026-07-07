@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Models\Contratista;
 use App\Models\Funcionario;
+use Illuminate\Http\Request;
 
 trait BuscaRegistroLocalDePersona
 {
@@ -31,5 +32,30 @@ trait BuscaRegistroLocalDePersona
         $ruta = $tipo === 'contratista' ? '/admin/contratistas' : '/admin/funcionarios';
 
         return $ruta.'?search='.urlencode($numeroIdentificacion);
+    }
+
+    /**
+     * Compara los campos de la persona ya existente en el Core contra lo enviado en el
+     * request y devuelve solo los que estaban vacíos allá y ahora traen un valor —
+     * los que ya tenían dato no se tocan (quedaron bloqueados en el frontend).
+     * $mapeo: ['campo_request' => 'campo_persona_en_core'].
+     */
+    private function camposPersonaACompletar(?array $personaExistente, Request $request, array $mapeo): array
+    {
+        if (! $personaExistente) {
+            return [];
+        }
+
+        $datos = [];
+        foreach ($mapeo as $campoRequest => $campoPersona) {
+            $enCore = $personaExistente[$campoPersona] ?? null;
+            $enviado = $request->input($campoRequest);
+
+            if (blank($enCore) && filled($enviado)) {
+                $datos[$campoPersona] = $enviado;
+            }
+        }
+
+        return $datos;
     }
 }

@@ -29,6 +29,11 @@ const validarCedula = (cedula) => {
     return '';
 };
 
+// Mapea cada campo del formulario a su nombre en la persona del Core, para saber
+// individualmente cuáles ya traen dato (se bloquean) y cuáles están vacíos (se completan).
+const CAMPO_CORE = { nombre: 'nombres', apellido: 'apellidos', email: 'email', telefono: 'telefono', whatsapp: 'whatsapp' };
+const esVacio = (v) => v === null || v === undefined || v === '';
+
 const validarEmail = (email) => {
     if (!email) return 'El email es requerido';
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -97,7 +102,10 @@ export default function Funcionarios() {
     const [personaEncontrada, setPersonaEncontrada] = useState(null);
     const [registroExistente, setRegistroExistente] = useState(null); // { tipo_registro, registro_id, registro_url }
     const [avisoVerificacionCaida, setAvisoVerificacionCaida] = useState(false);
+    const [avisoPostGuardado, setAvisoPostGuardado] = useState('');
     const revelarResto = editando || ['nueva', 'existente_sin_registro', 'error_503'].includes(verificacionEstado);
+    // Un campo se bloquea solo si la persona encontrada ya tiene dato ahí; si está vacío en el Core, queda editable.
+    const campoBloqueado = (campo) => !!personaEncontrada && !esVacio(personaEncontrada[CAMPO_CORE[campo]]);
 
     // Foto en formulario
     const [fotoFormFile, setFotoFormFile] = useState(null);
@@ -332,6 +340,7 @@ export default function Funcionarios() {
         setErroresCampo({});
         setLoading(true);
 
+        setAvisoPostGuardado('');
         try {
             let id = editando;
             if (editando) {
@@ -339,6 +348,7 @@ export default function Funcionarios() {
             } else {
                 const res = await api.post('/funcionarios', form);
                 id = res.data.id;
+                if (res.data.aviso) setAvisoPostGuardado(res.data.aviso);
             }
             if (fotoFormFile && id) {
                 const fd = new FormData();
@@ -399,6 +409,7 @@ export default function Funcionarios() {
         setPersonaEncontrada(null);
         setRegistroExistente(null);
         setAvisoVerificacionCaida(false);
+        setAvisoPostGuardado('');
         setSectoresFiltrados(sectores.filter(s => s.dependencia_id == f.dependencia_id));
         
         // Cargar foto existente si la tiene
@@ -706,7 +717,7 @@ export default function Funcionarios() {
                                             <div className={`mt-4 p-3 rounded-xl flex items-start gap-2 ${isDark ? 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-300' : 'bg-yellow-50 border border-yellow-200 text-yellow-800'}`}>
                                                 <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
                                                 <span className="text-sm">
-                                                    Ya existe una persona registrada con esta cédula: <strong>{personaEncontrada.nombres} {personaEncontrada.apellidos}</strong> ({personaEncontrada.email || 'sin email'}). Se vinculará este funcionario a ese registro; los datos personales no son editables abajo.
+                                                    Ya existe una persona registrada con esta cédula: <strong>{personaEncontrada.nombres} {personaEncontrada.apellidos}</strong> ({personaEncontrada.email || 'sin email'}). Se vinculará este funcionario a ese registro; los campos que ya tienen dato quedan bloqueados abajo, y los que estén vacíos puedes completarlos.
                                                 </span>
                                             </div>
                                         )}
@@ -761,8 +772,8 @@ export default function Funcionarios() {
                                 <div>
                                     <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Datos Personales</p>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        <div><label className={labelClass}><User size={14} />Nombre *</label><input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={inputClass} placeholder="Nombre" required disabled={!!personaEncontrada} /></div>
-                                        <div><label className={labelClass}><User size={14} />Apellido *</label><input type="text" value={form.apellido} onChange={e => setForm({ ...form, apellido: e.target.value })} className={inputClass} placeholder="Apellido" required disabled={!!personaEncontrada} /></div>
+                                        <div><label className={labelClass}><User size={14} />Nombre *</label><input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={inputClass} placeholder="Nombre" required disabled={campoBloqueado('nombre')} /></div>
+                                        <div><label className={labelClass}><User size={14} />Apellido *</label><input type="text" value={form.apellido} onChange={e => setForm({ ...form, apellido: e.target.value })} className={inputClass} placeholder="Apellido" required disabled={campoBloqueado('apellido')} /></div>
                                         {editando && (
                                         <div>
                                             <label className={labelClass}>
@@ -795,7 +806,7 @@ export default function Funcionarios() {
                                                 className={`${inputClass} ${erroresCampo.email ? 'border-red-500 focus:ring-red-500' : ''}`}
                                                 placeholder="correo@ejemplo.com"
                                                 required
-                                                disabled={!!personaEncontrada}
+                                                disabled={campoBloqueado('email')}
                                             />
                                             {erroresCampo.email && (
                                                 <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -814,7 +825,7 @@ export default function Funcionarios() {
                                                 className={`${inputClass} ${erroresCampo.telefono ? 'border-red-500 focus:ring-red-500' : ''}`}
                                                 placeholder="Teléfono (10 dígitos)"
                                                 maxLength={10}
-                                                disabled={!!personaEncontrada}
+                                                disabled={campoBloqueado('telefono')}
                                             />
                                             {erroresCampo.telefono && (
                                                 <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -833,7 +844,7 @@ export default function Funcionarios() {
                                                 className={`${inputClass} ${erroresCampo.whatsapp ? 'border-red-500 focus:ring-red-500' : ''}`}
                                                 placeholder="WhatsApp (10 dígitos)"
                                                 maxLength={10}
-                                                disabled={!!personaEncontrada}
+                                                disabled={campoBloqueado('whatsapp')}
                                             />
                                             {erroresCampo.whatsapp && (
                                                 <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
@@ -977,6 +988,18 @@ export default function Funcionarios() {
                                 </>}
                             </form>
                         </div>
+                    </div>
+                )}
+
+                {avisoPostGuardado && (
+                    <div className={`rounded-xl p-3 flex items-start justify-between gap-2 ${isDark ? 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-300' : 'bg-yellow-50 border border-yellow-200 text-yellow-800'}`}>
+                        <div className="flex items-start gap-2">
+                            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+                            <span className="text-sm">{avisoPostGuardado}</span>
+                        </div>
+                        <button type="button" onClick={() => setAvisoPostGuardado('')} className="flex-shrink-0">
+                            <X size={16} />
+                        </button>
                     </div>
                 )}
 
