@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\BuscaRegistroLocalDePersona;
 use App\Models\Contratista;
 use App\Models\Funcionario;
 use App\Models\Obligacion;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Storage;
 
 class PerfilController extends Controller
 {
+    use BuscaRegistroLocalDePersona;
+
     private const DOCUMENTOS = [
         'estudios-previos' => ['ruta_estudios_previos',       'nombre_estudios_previos'],
         'rut' => ['ruta_rut',                    'nombre_rut'],
@@ -256,7 +259,33 @@ class PerfilController extends Controller
 
         $contratista->update($data);
 
-        return $this->show($request);
+        // El Core es la fuente de verdad compartida: solo se completan allá los campos
+        // que todavía estaban vacíos. Si algún campo ya tiene valor administrativo, se
+        // ignora en silencio aquí — el contratista no puede pisar un dato ya fijado por
+        // un administrador desde su propio perfil.
+        $aviso = null;
+        if ($contratista->core_contratista_id) {
+            $core = app(CoreApiClient::class);
+            $contratistaCoreExistente = $core->obtenerContratista($contratista->core_contratista_id);
+            $datosActualizar = $this->camposACompletar($contratistaCoreExistente, $request, [
+                'numero_contrato' => 'numero_contrato', 'fecha_inicio' => 'fecha_inicio',
+                'fecha_fin' => 'fecha_fin', 'objeto_contrato' => 'objeto_contrato',
+            ]);
+
+            if (! empty($datosActualizar)) {
+                try {
+                    $core->actualizarContratista($contratista->core_contratista_id, $datosActualizar);
+                } catch (\Throwable $e) {
+                    $aviso = 'Los datos se guardaron, pero no se pudieron sincronizar con el Core.';
+                }
+            }
+        }
+
+        $respuesta = $this->show($request);
+        $datos = $respuesta->getData(true);
+        $datos['aviso'] = $aviso;
+
+        return response()->json($datos, $respuesta->status());
     }
 
     // ── Obligaciones ─────────────────────────────────────────────────────────
