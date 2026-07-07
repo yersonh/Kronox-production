@@ -104,7 +104,7 @@ export default function ContratistaDetalleModal({ contratista: c, isDark, onClos
                 <div className={`relative px-6 pt-6 pb-4 flex items-center gap-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
                     <div className="relative flex-shrink-0">
                         <img
-                            src={c.persona?.foto_url}
+                            src={c.persona?.foto_url ?? '/images/imagendefault.png'}
                             alt=""
                             className="w-16 h-16 rounded-2xl object-cover shadow-md border-2 border-white dark:border-gray-600"
                             onError={e => { e.target.src = '/images/imagendefault.png'; }}
@@ -222,7 +222,7 @@ export default function ContratistaDetalleModal({ contratista: c, isDark, onClos
                         <div className="flex gap-6">
                             <div className="flex-shrink-0">
                                 <img
-                                    src={c.persona?.foto_url}
+                                    src={c.persona?.foto_url ?? '/images/imagendefault.png'}
                                     alt=""
                                     className="w-24 h-24 rounded-2xl object-cover shadow border-2 border-white dark:border-gray-600"
                                     onError={e => { e.target.src = '/images/imagendefault.png'; }}

@@ -851,9 +851,9 @@ export default function Funcionarios() {
                                                         {/* Nombre con avatar */}
                                                         <td className={`px-4 py-3 font-medium whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-800'}`}>
                                                             <div className="flex items-center gap-2.5">
-                                                                <button onClick={() => setFotoAmpliada(f.persona?.foto_url)} className="flex-shrink-0 focus:outline-none">
+                                                                <button onClick={() => setFotoAmpliada(f.persona?.foto_url ?? '/images/imagendefault.png')} className="flex-shrink-0 focus:outline-none">
                                                                     <img
-                                                                        src={f.persona?.foto_thumbnail_url}
+                                                                        src={f.persona?.foto_thumbnail_url ?? '/images/imagendefault.png'}
                                                                         alt=""
                                                                         className="w-9 h-9 rounded-full object-cover border border-gray-200 dark:border-gray-600 shadow-sm hover:ring-2 hover:ring-indigo-400 transition"
                                                                         onError={e => { e.target.src = '/images/imagendefault.png'; }}
@@ -916,8 +916,8 @@ export default function Funcionarios() {
                                             <div key={f.id} className={`p-4 ${isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}`}>
                                                 <div className="flex items-start justify-between mb-2">
                                                     <div className="flex items-center gap-3">
-                                                        <button onClick={() => setFotoAmpliada(f.persona?.foto_url)} className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border border-gray-200 dark:border-gray-600">
-                                                            <img src={f.persona?.foto_thumbnail_url} alt=""
+                                                        <button onClick={() => setFotoAmpliada(f.persona?.foto_url ?? '/images/imagendefault.png')} className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border border-gray-200 dark:border-gray-600">
+                                                            <img src={f.persona?.foto_thumbnail_url ?? '/images/imagendefault.png'} alt=""
                                                                 className="w-full h-full object-cover"
                                                                 onError={e => { e.target.src = '/images/imagendefault.png'; }} />
                                                         </button>
