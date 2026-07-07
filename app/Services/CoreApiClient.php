@@ -55,7 +55,7 @@ class CoreApiClient
             $res = $this->client()->post('/api/personas/lote', ['ids' => $lote]);
 
             if ($res->successful()) {
-                $personas = $personas->merge(collect($res->json())->keyBy('id'));
+                $personas = $personas->union(collect($res->json())->keyBy('id'));
             }
         }
 
