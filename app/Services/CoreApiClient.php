@@ -146,28 +146,32 @@ class CoreApiClient
 
     public function obtenerDependencias(): Collection
     {
-        return Cache::remember('core.dependencias', 3600, function () {
-            $res = $this->client()->get('/api/dependencias');
-
-            return $res->successful() ? collect($res->json())->keyBy('id') : collect();
-        });
+        return collect($this->cachearCatalogo('core.dependencias.v2', '/api/dependencias'))->keyBy('id');
     }
 
     public function obtenerSectores(): Collection
     {
-        return Cache::remember('core.sectores', 3600, function () {
-            $res = $this->client()->get('/api/sectores');
-
-            return $res->successful() ? collect($res->json())->keyBy('id') : collect();
-        });
+        return collect($this->cachearCatalogo('core.sectores.v2', '/api/sectores'))->keyBy('id');
     }
 
     public function obtenerNivelesCargo(): Collection
     {
-        return Cache::remember('core.niveles_cargo', 3600, function () {
-            $res = $this->client()->get('/api/niveles-cargo');
+        return collect($this->cachearCatalogo('core.niveles_cargo.v2', '/api/niveles-cargo'))->keyBy('id');
+    }
 
-            return $res->successful() ? collect($res->json())->keyBy('id') : collect();
+    /**
+     * Cachea la respuesta cruda (array) de un catálogo, nunca un Collection ya armado:
+     * serializar un objeto Illuminate\Support\Collection vía el driver 'database' puede
+     * devolver __PHP_Incomplete_Class en procesos de consola recién arrancados si la
+     * clase no se resuelve exactamente igual al momento del unserialize automático.
+     * Un array plano no tiene esa dependencia de autoload.
+     */
+    private function cachearCatalogo(string $key, string $endpoint): array
+    {
+        return Cache::remember($key, 3600, function () use ($endpoint) {
+            $res = $this->client()->get($endpoint);
+
+            return $res->successful() ? $res->json() : [];
         });
     }
 

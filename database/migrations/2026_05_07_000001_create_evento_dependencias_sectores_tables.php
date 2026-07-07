@@ -61,8 +61,6 @@ return new class extends Migration
 
         // 5. Eliminar FK y columnas antiguas de eventos
         Schema::table('eventos', function (Blueprint $table) {
-            $table->dropForeign(['dependencia_id']);
-            $table->dropForeign(['sector_id']);
             $table->dropColumn(['dependencia_id', 'sector_id']);
         });
     }
