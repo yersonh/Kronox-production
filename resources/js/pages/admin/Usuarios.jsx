@@ -7,7 +7,7 @@ import {
     Edit, Trash2, Save, X,
     AlertCircle, AlertTriangle, Shield, Users,
     Search, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, CircleX,
-    KeyRound, Eye, EyeOff
+    KeyRound
 } from 'lucide-react';
 import { useDebounce } from '../../hooks/useDebounce';
 
@@ -46,9 +46,6 @@ export default function Usuarios() {
     const [mostrarForm, setMostrarForm] = useState(false);
     const [modalConfirm, setModalConfirm] = useState({ show: false, id: null, nombre: '', accion: 'desactivar' });
     const [modalPassword, setModalPassword] = useState({ show: false, id: null, nombre: '' });
-    const [passwordForm, setPasswordForm] = useState({ password: '', password_confirmation: '' });
-    const [showPassword, setShowPassword] = useState(false);
-    const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const inputClass = `w-full rounded-xl px-4 py-2.5 text-sm transition border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`;
     const labelClass = `block text-sm font-medium mb-1.5 flex items-center gap-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
@@ -127,12 +124,11 @@ export default function Usuarios() {
         }
     };
 
-    const handleResetPassword = async (e) => {
-        e.preventDefault();
+    const handleResetPassword = async () => {
         setLoading(true);
         setError('');
         try {
-            await api.post(`/usuarios/${modalPassword.id}/reset-password`, passwordForm);
+            await api.post(`/usuarios/${modalPassword.id}/reset-password`);
             closeModalPassword();
         } catch (err) {
             setError(err.response?.data?.message || 'Error al resetear contraseña');
@@ -155,15 +151,11 @@ export default function Usuarios() {
 
     const openModalPassword = (id, nombre) => {
         setError('');
-        setPasswordForm({ password: '', password_confirmation: '' });
-        setShowPassword(false);
-        setShowPasswordConfirm(false);
         setModalPassword({ show: true, id, nombre });
     };
 
     const closeModalPassword = () => {
         setModalPassword({ show: false, id: null, nombre: '' });
-        setPasswordForm({ password: '', password_confirmation: '' });
         setError('');
     };
 
@@ -539,47 +531,21 @@ export default function Usuarios() {
                         </div>
                         <div className="p-6">
                             <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                Nueva contraseña para <span className="font-semibold">{modalPassword.nombre}</span>
+                                ¿Confirmas resetear la contraseña de <span className="font-semibold">{modalPassword.nombre}</span>? Se generará una nueva contraseña temporal y se le enviará por correo.
                             </p>
                             {error && (
                                 <div className={`mb-4 p-3 rounded-xl flex items-center gap-2 ${isDark ? 'bg-red-500/10 border border-red-500/20 text-red-300' : 'bg-red-50 border border-red-200 text-red-700'}`}>
                                     <AlertCircle size={16} /><span className="text-sm">{error}</span>
                                 </div>
                             )}
-                            <form onSubmit={handleResetPassword} className="space-y-4">
-                                <div>
-                                    <label className={labelClass}><KeyRound size={14} />Nueva contraseña *</label>
-                                    <div className="relative">
-                                        <input type={showPassword ? 'text' : 'password'} value={passwordForm.password}
-                                            onChange={e => setPasswordForm({ ...passwordForm, password: e.target.value })}
-                                            className={inputClass} placeholder="Mínimo 8 caracteres" required />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)}
-                                            className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
-                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className={labelClass}><KeyRound size={14} />Confirmar contraseña *</label>
-                                    <div className="relative">
-                                        <input type={showPasswordConfirm ? 'text' : 'password'} value={passwordForm.password_confirmation}
-                                            onChange={e => setPasswordForm({ ...passwordForm, password_confirmation: e.target.value })}
-                                            className={inputClass} placeholder="Repite la contraseña" required />
-                                        <button type="button" onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                                            className={`absolute right-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
-                                            {showPasswordConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 pt-2">
-                                    <button type="button" onClick={closeModalPassword} className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Cancelar</button>
-                                    <button type="submit" disabled={loading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white transition disabled:opacity-50">
-                                        {loading
-                                            ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Guardando...</>
-                                            : <><KeyRound size={16} /> Resetear</>}
-                                    </button>
-                                </div>
-                            </form>
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={closeModalPassword} className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Cancelar</button>
+                                <button type="button" onClick={handleResetPassword} disabled={loading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white transition disabled:opacity-50">
+                                    {loading
+                                        ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Reseteando...</>
+                                        : <><KeyRound size={16} /> Confirmar</>}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

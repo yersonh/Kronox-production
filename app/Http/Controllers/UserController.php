@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Notifications\ContrasenaReseteadaNotification;
 use App\Services\CoreApiClient;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -101,13 +102,16 @@ class UserController extends Controller
             return $denegado;
         }
 
-        $request->validate([
-            'password' => 'required|string|min:8|confirmed',
+        $password = Str::password(12);
+
+        $user->update([
+            'password' => $password,
+            'must_change_password' => true,
         ]);
 
-        $user->update(['password' => Hash::make($request->password)]);
+        $user->notify(new ContrasenaReseteadaNotification($password));
 
-        return response()->json(['message' => 'Contraseña actualizada correctamente']);
+        return response()->json(['message' => 'Contraseña reseteada, se envió un correo con la nueva contraseña temporal']);
     }
 
     public function destroy(User $user)
