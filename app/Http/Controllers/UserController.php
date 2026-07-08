@@ -67,23 +67,23 @@ class UserController extends Controller
         return response()->json($paginator);
     }
 
-    public function show(User $user)
+    public function show(User $usuario)
     {
         if ($denegado = $this->denegarSiNoEsAdmin()) {
             return $denegado;
         }
 
-        return response()->json($this->conPersona($user));
+        return response()->json($this->conPersona($usuario));
     }
 
     // Solo actualiza el rol
-    public function update(Request $request, User $user)
+    public function update(Request $request, User $usuario)
     {
         if ($denegado = $this->denegarSiNoEsAdmin()) {
             return $denegado;
         }
 
-        if ($user->rol === 'super_admin') {
+        if ($usuario->rol === 'super_admin') {
             return response()->json(['message' => 'No se puede cambiar el rol de un Super Admin.'], 403);
         }
 
@@ -91,12 +91,12 @@ class UserController extends Controller
             'rol' => 'required|in:super_admin,admin,digitador,funcionario,contratista,supervisor_contratos',
         ]);
 
-        $user->update(['rol' => $request->rol]);
+        $usuario->update(['rol' => $request->rol]);
 
-        return response()->json($this->conPersona($user));
+        return response()->json($this->conPersona($usuario));
     }
 
-    public function resetPassword(Request $request, User $user)
+    public function resetPassword(Request $request, User $usuario)
     {
         if ($denegado = $this->denegarSiNoEsAdmin()) {
             return $denegado;
@@ -104,42 +104,42 @@ class UserController extends Controller
 
         $password = Str::password(12);
 
-        $user->update([
+        $usuario->update([
             'password' => $password,
             'must_change_password' => true,
         ]);
 
-        $user->notify(new ContrasenaReseteadaNotification($password));
+        $usuario->notify(new ContrasenaReseteadaNotification($password));
 
         return response()->json(['message' => 'Contraseña reseteada, se envió un correo con la nueva contraseña temporal']);
     }
 
-    public function destroy(User $user)
+    public function destroy(User $usuario)
     {
         if ($denegado = $this->denegarSiNoEsAdmin()) {
             return $denegado;
         }
 
-        if ($user->rol === 'super_admin') {
+        if ($usuario->rol === 'super_admin') {
             return response()->json(['message' => 'No se puede desactivar un Super Admin.'], 403);
         }
 
-        $user->update(['activo' => false]);
+        $usuario->update(['activo' => false]);
 
         return response()->json(['message' => 'Usuario desactivado']);
     }
 
-    public function reactivar(User $user)
+    public function reactivar(User $usuario)
     {
         if ($denegado = $this->denegarSiNoEsAdmin()) {
             return $denegado;
         }
 
-        if ($user->rol === 'super_admin') {
+        if ($usuario->rol === 'super_admin') {
             return response()->json(['message' => 'No se puede reactivar un Super Admin.'], 403);
         }
 
-        $user->update(['activo' => true]);
+        $usuario->update(['activo' => true]);
 
         return response()->json(['message' => 'Usuario reactivado']);
     }
