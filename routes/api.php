@@ -92,7 +92,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('niveles-cargo', [NivelCargoController::class, 'index']);
         Route::get('niveles-cargo/{nivelCargo}', [NivelCargoController::class, 'show']);
-        Route::apiResource('tipos-evento', TipoEventoController::class);
+        // Wildcard explícito 'tipoEvento': el nombre autogenerado por apiResource para un
+        // recurso kebab-case ('tipos-evento') sería 'tipos_evento' (plural), que no coincide
+        // con el parámetro TipoEvento $tipoEvento de show() y rompe el binding implícito.
+        Route::apiResource('tipos-evento', TipoEventoController::class)
+            ->parameters(['tipos-evento' => 'tipoEvento']);
         Route::apiResource('salas', SalaController::class);
 
         // Personas
