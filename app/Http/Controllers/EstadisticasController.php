@@ -472,10 +472,24 @@ class EstadisticasController extends Controller
 
         $puntos = Evento::whereNotNull('latitude')
             ->whereNotNull('longitude')
-            ->with(['dependencias:id', 'sectores:id'])
             ->select('id', 'tema', 'estado', 'latitude', 'longitude', 'direccion', 'sitio', 'fecha_hora')
+            ->get();
+
+        $eventoIds = $puntos->pluck('id');
+
+        $depsPorEvento = DB::table('evento_dependencias')
+            ->whereIn('evento_id', $eventoIds)
             ->get()
-            ->map(fn ($e) => [
+            ->groupBy('evento_id')
+            ->map(fn ($rows) => $rows->pluck('dependencia_id')->values());
+
+        $sectoresPorEvento = DB::table('evento_sectores')
+            ->whereIn('evento_id', $eventoIds)
+            ->get()
+            ->groupBy('evento_id')
+            ->map(fn ($rows) => $rows->pluck('sector_id')->values());
+
+        $puntos = $puntos->map(fn ($e) => [
                 'id' => $e->id,
                 'tema' => $e->tema,
                 'estado' => $e->estado,
@@ -484,8 +498,8 @@ class EstadisticasController extends Controller
                 'direccion' => $e->direccion,
                 'sitio' => $e->sitio,
                 'fecha' => $e->fecha_hora,
-                'dependencia_ids' => $e->dependencias->pluck('id')->values(),
-                'sector_ids' => $e->sectores->pluck('id')->values(),
+                'dependencia_ids' => $depsPorEvento->get($e->id, collect())->values(),
+                'sector_ids' => $sectoresPorEvento->get($e->id, collect())->values(),
             ]);
 
         // Top lugares por nombre de sitio
