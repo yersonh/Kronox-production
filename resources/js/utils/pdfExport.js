@@ -4,8 +4,8 @@ import api from '../api/axios';
 
 // Paleta institucional formal — sin azules llamativos
 const INST = {
-    navyDark:  [35, 45, 65],    // cabeceras de tabla / sección
-    navyMid:   [80, 95, 125],   // sub-cabeceras de ítem
+    navyDark:  [55, 58, 64],    // cabeceras de tabla / sección
+    navyMid:   [224, 225, 228], // sub-cabeceras de ítem (gris claro, texto oscuro)
     navyFg:    [255, 255, 255], // texto sobre fondo oscuro
     rowAlt:    [246, 247, 249], // fila alternada
     border:    [185, 190, 200], // bordes de tabla
@@ -397,7 +397,7 @@ export async function exportarAuxiliarInforme(datos, desde, hasta) {
             doc.setFillColor(...INST.navyMid);
             setDraw();
             doc.rect(M, y, IW, subH, 'FD');
-            doc.setTextColor(...INST.navyFg);
+            doc.setTextColor(...INST.text);
             doc.text(subLines, M + 3, y + 5.5);
             y += subH;
 
