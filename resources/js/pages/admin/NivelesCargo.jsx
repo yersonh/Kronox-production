@@ -16,7 +16,7 @@ export default function NivelesCargo() {
     const [editando, setEditando] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [modalConfirm, setModalConfirm] = useState({ show: false, id: null, nombre: '' });
+    const [modalConfirm, setModalConfirm] = useState({ show: false, id: null, nombre: '', accion: 'desactivar' });
     const [modalSuccess, setModalSuccess] = useState({ show: false, name: '' });
     const [isMobile, setIsMobile] = useState(false);
 
@@ -63,26 +63,30 @@ export default function NivelesCargo() {
     };
 
     const handleEliminar = async () => {
-        const { id } = modalConfirm;
+        const { id, accion } = modalConfirm;
         setLoading(true);
         try {
-            await api.delete(`/niveles-cargo/${id}`);
+            if (accion === 'desactivar') {
+                await api.delete(`/niveles-cargo/${id}`);
+            } else {
+                await api.patch(`/niveles-cargo/${id}`, { activo: true });
+            }
             closeModal();
             fetchNiveles();
         } catch (err) {
-            setError(err.response?.data?.message || 'Error al desactivar');
+            setError(err.response?.data?.message || `Error al ${accion === 'desactivar' ? 'desactivar' : 'reactivar'}`);
         } finally {
             setLoading(false);
         }
     };
 
-    const openModal = (id, nombre) => {
+    const openModal = (id, nombre, accion = 'desactivar') => {
         setError('');
-        setModalConfirm({ show: true, id, nombre });
+        setModalConfirm({ show: true, id, nombre, accion });
     };
 
     const closeModal = () => {
-        setModalConfirm({ show: false, id: null, nombre: '' });
+        setModalConfirm({ show: false, id: null, nombre: '', accion: 'desactivar' });
         setError('');
     };
 
@@ -223,7 +227,11 @@ export default function NivelesCargo() {
                                                     <td className="px-6 py-3">
                                                         <div className="flex items-center gap-2">
                                                             <button onClick={() => handleEditar(n)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-indigo-400' : 'hover:bg-gray-100 text-gray-500 hover:text-indigo-600'}`} title="Editar"><Edit size={16} /></button>
-                                                            <button onClick={() => openModal(n.id, n.nombre)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`} title="Desactivar"><Trash2 size={16} /></button>
+                                                            {n.activo ? (
+                                                                <button onClick={() => openModal(n.id, n.nombre, 'desactivar')} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`} title="Desactivar"><Trash2 size={16} /></button>
+                                                            ) : (
+                                                                <button onClick={() => openModal(n.id, n.nombre, 'reactivar')} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-green-400' : 'hover:bg-gray-100 text-gray-500 hover:text-green-600'}`} title="Reactivar"><CheckCircle size={16} /></button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -263,7 +271,11 @@ export default function NivelesCargo() {
                                                 </div>
                                                 <div className="flex gap-1">
                                                     <button onClick={() => handleEditar(n)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-indigo-400' : 'hover:bg-gray-100 text-gray-500 hover:text-indigo-600'}`}><Edit size={16} /></button>
-                                                    <button onClick={() => openModal(n.id, n.nombre)} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`}><Trash2 size={16} /></button>
+                                                    {n.activo ? (
+                                                        <button onClick={() => openModal(n.id, n.nombre, 'desactivar')} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-red-400' : 'hover:bg-gray-100 text-gray-500 hover:text-red-600'}`}><Trash2 size={16} /></button>
+                                                    ) : (
+                                                        <button onClick={() => openModal(n.id, n.nombre, 'reactivar')} className={`p-1.5 rounded-lg transition ${isDark ? 'hover:bg-gray-700 text-gray-400 hover:text-green-400' : 'hover:bg-gray-100 text-gray-500 hover:text-green-600'}`}><CheckCircle size={16} /></button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -298,20 +310,24 @@ export default function NivelesCargo() {
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closeModal} />
                     <div className={`relative w-full max-w-md rounded-2xl shadow-2xl overflow-hidden ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
                         <div className="p-6 text-center">
-                            <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 ${isDark ? 'bg-red-500/20' : 'bg-red-100'}`}>
-                                <AlertTriangle size={24} className={isDark ? 'text-red-400' : 'text-red-600'} />
+                            <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 ${modalConfirm.accion === 'desactivar' ? (isDark ? 'bg-red-500/20' : 'bg-red-100') : (isDark ? 'bg-green-500/20' : 'bg-green-100')}`}>
+                                {modalConfirm.accion === 'desactivar'
+                                    ? <AlertTriangle size={24} className={isDark ? 'text-red-400' : 'text-red-600'} />
+                                    : <CheckCircle size={24} className={isDark ? 'text-green-400' : 'text-green-600'} />}
                             </div>
-                            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>Desactivar nivel</h3>
+                            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                                {modalConfirm.accion === 'desactivar' ? 'Desactivar nivel' : 'Reactivar nivel'}
+                            </h3>
                             <p className={`text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                ¿Estás seguro de que deseas desactivar el nivel <span className="font-semibold">"{modalConfirm.nombre}"</span>?
+                                ¿Estás seguro de que deseas {modalConfirm.accion === 'desactivar' ? 'desactivar' : 'reactivar'} el nivel <span className="font-semibold">"{modalConfirm.nombre}"</span>?
                             </p>
                             {error && <div className={`mb-4 p-2 rounded-lg text-sm ${isDark ? 'bg-red-500/20 text-red-300' : 'bg-red-50 text-red-600'}`}>{error}</div>}
                             <div className="flex gap-3">
                                 <button onClick={closeModal} className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Cancelar</button>
-                                <button onClick={handleEliminar} disabled={loading} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-red-600 hover:bg-red-700 text-white transition disabled:opacity-50">
+                                <button onClick={handleEliminar} disabled={loading} className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition disabled:opacity-50 ${modalConfirm.accion === 'desactivar' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}>
                                     {loading
-                                        ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> Desactivando...</>
-                                        : <><Trash2 size={16} /> Desactivar</>}
+                                        ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" /> {modalConfirm.accion === 'desactivar' ? 'Desactivando...' : 'Reactivando...'}</>
+                                        : <>{modalConfirm.accion === 'desactivar' ? <Trash2 size={16} /> : <CheckCircle size={16} />} {modalConfirm.accion === 'desactivar' ? 'Desactivar' : 'Reactivar'}</>}
                                 </button>
                             </div>
                         </div>
