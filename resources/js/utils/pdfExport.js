@@ -4,9 +4,9 @@ import api from '../api/axios';
 
 // Paleta institucional formal — sin azules llamativos
 const INST = {
-    navyDark:  [55, 58, 64],    // cabeceras de tabla / sección
+    navyDark:  [199, 201, 205], // cabeceras de tabla / sección (gris medio, mismo tono de Tabla 7)
     navyMid:   [224, 225, 228], // sub-cabeceras de ítem (gris claro, texto oscuro)
-    navyFg:    [255, 255, 255], // texto sobre fondo oscuro
+    navyFg:    [20, 20, 30],    // texto sobre fondo de cabecera
     rowAlt:    [246, 247, 249], // fila alternada
     border:    [185, 190, 200], // bordes de tabla
     text:      [20, 20, 30],    // texto principal
