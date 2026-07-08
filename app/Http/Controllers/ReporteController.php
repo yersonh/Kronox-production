@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Evento;
 use App\Models\TareaCompromiso;
 use App\Services\CoreApiClient;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ReporteController extends Controller
 {
@@ -15,10 +17,6 @@ class ReporteController extends Controller
 
     public function compromisos(Request $request)
     {
-        if (!$this->soloGestores($request)) {
-            return response()->json(['message' => 'No autorizado'], 403);
-        }
-
         $request->validate([
             'evento_id'    => 'nullable|exists:eventos,id',
             'persona_id'   => 'nullable|integer',
@@ -27,13 +25,34 @@ class ReporteController extends Controller
             'fecha_fin'    => 'nullable|date|after_or_equal:fecha_inicio',
         ]);
 
+        $esGestor = $this->soloGestores($request);
+
+        if (!$esGestor) {
+            // Un no-gestor no puede pedir el reporte general sin acotar a un evento.
+            if (!$request->evento_id) {
+                return response()->json(['message' => 'No autorizado'], 403);
+            }
+
+            $evento = Evento::findOrFail($request->evento_id);
+
+            // Mismo criterio de "puede ver el evento" que ya usa EventoPolicy en el
+            // resto de la app: gestores, el responsable, o un invitado.
+            if (!Gate::forUser($request->user())->allows('view', $evento)) {
+                return response()->json(['message' => 'No autorizado'], 403);
+            }
+        }
+
         $query = TareaCompromiso::with('evento');
 
         if ($request->evento_id) {
             $query->where('evento_id', $request->evento_id);
         }
 
-        if ($request->persona_id) {
+        // Un no-gestor no puede usar persona_id para filtrar compromisos de otra
+        // persona — el evento_id ya pasó la verificación de responsable/invitado
+        // arriba, así que se ignora este filtro en vez de forzarlo a su propio ID
+        // (eso le ocultaría los compromisos que él mismo asignó a otros).
+        if ($esGestor && $request->persona_id) {
             $query->where('persona_id', $request->persona_id);
         }
 
