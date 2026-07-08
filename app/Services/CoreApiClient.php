@@ -219,6 +219,34 @@ class CoreApiClient
         return collect($this->cachearCatalogo('core.niveles_cargo.v2', '/api/niveles-cargo'))->keyBy('id');
     }
 
+    public function crearNivelCargo(array $datos): array
+    {
+        $res = $this->client()->post('/api/niveles-cargo', $datos);
+        $res->throw();
+        Cache::forget('core.niveles_cargo.v2');
+
+        return $res->json();
+    }
+
+    public function actualizarNivelCargo(int $id, array $datos): array
+    {
+        $res = $this->client()->patch("/api/niveles-cargo/{$id}", $datos);
+        $res->throw();
+        Cache::forget('core.niveles_cargo.v2');
+
+        return $res->json();
+    }
+
+    /** Desactiva (no borra) un nivel de cargo en el Core. */
+    public function desactivarNivelCargo(int $id): array
+    {
+        $res = $this->client()->delete("/api/niveles-cargo/{$id}");
+        $res->throw();
+        Cache::forget('core.niveles_cargo.v2');
+
+        return $res->json();
+    }
+
     /**
      * Cachea la respuesta cruda (array) de un catálogo, nunca un Collection ya armado:
      * serializar un objeto Illuminate\Support\Collection vía el driver 'database' puede

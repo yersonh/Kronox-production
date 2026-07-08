@@ -43,7 +43,7 @@ export default function NivelesCargo() {
         setError('');
         try {
             if (editando) {
-                await api.put(`/niveles-cargo/${editando}`, form);
+                await api.patch(`/niveles-cargo/${editando}`, form);
             } else {
                 await api.post('/niveles-cargo', form);
                 setModalSuccess({ show: true, name: form.nombre });

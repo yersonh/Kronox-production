@@ -76,7 +76,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('perfil/obligaciones/{obligacion}', [PerfilController::class, 'actualizarObligacion']);
         Route::delete('perfil/obligaciones/{obligacion}', [PerfilController::class, 'eliminarObligacion']);
 
-        // Parámetros base — dependencias/sectores/niveles de cargo son catálogos del Core (solo lectura aquí)
+        // Parámetros base — dependencias/sectores son catálogos del Core (solo lectura aquí);
+        // niveles de cargo también vive en el Core pero ya admite escritura (ver abajo).
         Route::get('dependencias', [DependenciaController::class, 'index']);
         Route::get('dependencias/{dependencia}', [DependenciaController::class, 'show']);
 
@@ -91,7 +92,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('prioridades/{prioridad}', [PrioridadController::class, 'destroy']);
 
         Route::get('niveles-cargo', [NivelCargoController::class, 'index']);
+        Route::post('niveles-cargo', [NivelCargoController::class, 'store']);
         Route::get('niveles-cargo/{nivelCargo}', [NivelCargoController::class, 'show']);
+        Route::patch('niveles-cargo/{nivelCargo}', [NivelCargoController::class, 'update']);
+        Route::delete('niveles-cargo/{nivelCargo}', [NivelCargoController::class, 'destroy']);
         // Wildcard explícito 'tipoEvento': el nombre autogenerado por apiResource para un
         // recurso kebab-case ('tipos-evento') sería 'tipos_evento' (plural), que no coincide
         // con el parámetro TipoEvento $tipoEvento de show() y rompe el binding implícito.
