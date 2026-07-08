@@ -47,9 +47,12 @@ class AuxiliarInformeController extends Controller
         $personaId    = $contratista->persona_id;
         $contratistaId = $contratista->id;
 
+        // 'estado' se eliminó de obligaciones (junto con fecha_cumplimiento, migración
+        // 2026_06_22_000001/000002): el seguimiento de cumplimiento ahora vive en el
+        // estado propio de cada evento/tarea/compromiso vinculado, no en la obligación.
         $obligaciones = $contratista->obligaciones()
             ->orderBy('created_at')
-            ->get(['id', 'descripcion', 'estado']);
+            ->get(['id', 'descripcion']);
 
         // Índice de vinculos: 'tipo_id' => vinculacion
         $vinculos = InformeVinculacion::where('contratista_id', $contratistaId)
