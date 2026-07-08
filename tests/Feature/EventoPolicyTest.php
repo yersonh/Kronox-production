@@ -41,6 +41,8 @@ class EventoPolicyTest extends TestCase
         Http::fake([
             'core-fake.test/api/personas/lote' => Http::response([$personaFake], 200),
             'core-fake.test/api/personas/*' => Http::response($personaFake, 200),
+            'core-fake.test/api/dependencias' => Http::response([], 200),
+            'core-fake.test/api/sectores' => Http::response([], 200),
         ]);
     }
 

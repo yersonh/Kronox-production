@@ -24,9 +24,12 @@ use Illuminate\Support\Str;
 class EventoController extends Controller
 {
     /**
-     * Serializa un evento a array adjuntando dependencia_ids/sector_ids (locales) y
-     * responsable/invitados/compromisos con datos de persona traídos del Core en UNA
-     * sola llamada por lote (evita N+1 por HTTP).
+     * Serializa un evento a array adjuntando dependencias/sectores (resueltos a
+     * {id, nombre} desde los catálogos cacheados del Core) y responsable/invitados/
+     * compromisos con datos de persona traídos del Core en UNA sola llamada por lote
+     * (evita N+1 por HTTP). El frontend (DependenciasCell, EventoModal, EventoForm,
+     * etc.) espera exactamente esta forma — ver AuditoriaController::eventosVencidos()
+     * para el mismo patrón ya usado en otro endpoint.
      */
     private function serializarEvento(Evento $evento, bool $puedeVerConclusiones = true): array
     {
@@ -40,6 +43,21 @@ class EventoController extends Controller
         $arr['dependencia_ids'] = $evento->dependenciaIds();
         $arr['sector_ids'] = $evento->sectorIds();
 
+        $dependencias = $core->obtenerDependencias();
+        $sectores = $core->obtenerSectores();
+
+        $arr['dependencias'] = $arr['dependencia_ids']
+            ->map(fn ($id) => $dependencias->get($id))
+            ->filter()
+            ->map(fn ($d) => ['id' => $d['id'], 'nombre' => $d['nombre']])
+            ->values();
+
+        $arr['sectores'] = $arr['sector_ids']
+            ->map(fn ($id) => $sectores->get($id))
+            ->filter()
+            ->map(fn ($s) => ['id' => $s['id'], 'nombre' => $s['nombre']])
+            ->values();
+
         $ids = collect([$evento->responsable_id])
             ->merge($evento->relationLoaded('invitados') ? $evento->invitados->pluck('persona_id') : [])
             ->merge($evento->relationLoaded('compromisos') ? $evento->compromisos->pluck('persona_id') : [])
@@ -47,7 +65,10 @@ class EventoController extends Controller
 
         $personas = $core->buscarPersonasPorIds($ids);
 
-        $arr['responsable'] = $evento->responsable_id ? $personas->get($evento->responsable_id) : null;
+        $responsable = $evento->responsable_id ? $personas->get($evento->responsable_id) : null;
+        $arr['responsable'] = $responsable
+            ? ['nombre' => $responsable['nombres'] ?? null, 'apellido' => $responsable['apellidos'] ?? null]
+            : null;
 
         if ($evento->relationLoaded('invitados')) {
             $arr['invitados'] = $evento->invitados->map(function ($inv) use ($personas) {
