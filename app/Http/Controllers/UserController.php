@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Notifications\ContrasenaReseteadaNotification;
 use App\Services\CoreApiClient;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -155,6 +156,15 @@ class UserController extends Controller
             'password' => $request->password,
             'must_change_password' => false,
         ]);
+
+        // Recibir las credenciales por correo y poder iniciar sesión con ellas ya es
+        // prueba de posesión de esa cuenta — exigir una verificación de correo aparte
+        // después de esto sería redundante y deja al usuario bloqueado por el
+        // middleware 'verified' en el resto de la app sin ningún paso que lo resuelva.
+        if (! $user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+            event(new Verified($user));
+        }
 
         return response()->json([
             'message' => 'Contraseña actualizada correctamente',

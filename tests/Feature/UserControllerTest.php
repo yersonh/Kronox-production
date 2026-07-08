@@ -86,4 +86,31 @@ class UserControllerTest extends TestCase
 
         $this->assertTrue($objetivo->fresh()->activo);
     }
+
+    /**
+     * Regresión aparte: cambiarContrasenaInicial() nunca marcaba email_verified_at,
+     * dejando a cualquier usuario que solo cambió su contraseña inicial bloqueado por
+     * el middleware 'verified' en el resto de la app (perfil, eventos, tareas, etc.),
+     * sin ningún paso disponible para resolverlo.
+     */
+    public function test_cambiar_contrasena_inicial_marca_el_correo_como_verificado(): void
+    {
+        $usuario = User::factory()->create([
+            'rol' => 'digitador',
+            'must_change_password' => true,
+            'email_verified_at' => null,
+        ]);
+
+        $this->actingAs($usuario)
+            ->postJson('/api/cambiar-contrasena-inicial', [
+                'password' => 'nueva-clave-segura',
+                'password_confirmation' => 'nueva-clave-segura',
+            ])
+            ->assertOk();
+
+        $usuario->refresh();
+
+        $this->assertNotNull($usuario->email_verified_at);
+        $this->assertFalse($usuario->must_change_password);
+    }
 }
