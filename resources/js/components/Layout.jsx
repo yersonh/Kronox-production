@@ -112,7 +112,16 @@ export default function Layout({ children }) {
         ?? null;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+        <div className="min-h-screen relative flex transition-colors duration-300 bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+            {/* Background Image Layer */}
+            <div className="fixed inset-0 z-0 pointer-events-none">
+                <img
+                    src="/images/fondo3.png"
+                    alt=""
+                    className="w-full h-full object-cover opacity-60"
+                />
+            </div>
+
             {/* Mobile menu button */}
             <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -133,8 +142,8 @@ export default function Layout({ children }) {
 
             {/* Sidebar */}
             <aside className={`
-                fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 
-                border-r border-gray-200 dark:border-gray-700 flex flex-col shadow-sm
+                fixed lg:relative inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800/40 dark:backdrop-blur-xl
+                border-r border-gray-200 dark:border-white/10 flex flex-col shadow-sm
                 transform transition-transform duration-300 ease-in-out
                 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
@@ -343,12 +352,12 @@ export default function Layout({ children }) {
             )}
 
             {/* Main Content */}
-            <main className="flex-1 p-4 lg:p-6 overflow-auto">
+            <main className="relative z-10 flex-1 p-4 lg:p-6 overflow-auto">
                 <div className="max-w-7xl mx-auto">
                     {/* Header entidad */}
                     {(entidad.nombre || !logoError) && (
                         <div className={`flex items-center justify-between gap-4 px-5 py-3 rounded-2xl mb-6 border ${
-                            isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100 shadow-sm'
+                            isDark ? 'bg-gray-800/40 backdrop-blur-xl border-white/10' : 'bg-white border-gray-100 shadow-sm'
                         }`}>
                             <div className="min-w-0">
                                 {entidad.nombre && (

@@ -31,11 +31,15 @@ export default function ForgotPassword() {
     };
 
     return (
-        <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${
+        <div className={`min-h-screen relative flex items-center justify-center p-4 transition-colors duration-300 ${
             isDark
                 ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'
                 : 'bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200'
         }`}>
+            <div className="absolute inset-0 z-0">
+                <img src="/images/fondo3.png" alt="" className="w-full h-full object-cover opacity-60" />
+            </div>
+
             {isDark && (
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
