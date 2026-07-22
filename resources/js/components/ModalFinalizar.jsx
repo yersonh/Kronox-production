@@ -316,7 +316,7 @@ export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
                                     )}
 
                                     {/* Resumen generado por IA */}
-                                    {!generandoResumen && (resumenActa || evento.acta_reunion) && (
+                                    {!generandoResumen && (actaNombre || evento.acta_reunion) && (
                                         <div className="mt-3">
                                             <label className={`text-xs font-medium mb-1.5 flex items-center gap-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                                 <Sparkles size={12} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
