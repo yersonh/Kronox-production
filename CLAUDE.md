@@ -194,7 +194,7 @@ POST /api/eventos/{id}/aplazar              (razon_aplazamiento required; admin/
 POST /api/eventos/{id}/finalizar            (conclusiones required, asistencias array)
 POST /api/eventos/{id}/documento-soporte    (file upload)
 GET  /api/eventos/{id}/documento-soporte    (file download)
-POST /api/eventos/{id}/acta-reunion         (file upload)
+POST /api/eventos/{id}/acta-reunion         (file upload; synchronously calls pdf-api /analyze-acta and saves the result to resumen_acta)
 GET  /api/eventos/{id}/acta-reunion         (file download)
 POST /api/eventos/{id}/lista-asistencia     (file upload)
 GET  /api/eventos/{id}/lista-asistencia     (file download)
@@ -315,6 +315,8 @@ Notifications: `EventoInvitadoNotification`, `EventoProximoNotification` (48h/24
 ### PdfApiService
 
 `app/Services/PdfApiService.php` calls the external `pdf-api` microservice (`POST /analyze`) to extract and analyze PDF support documents via Gemini. Called by `AuxiliarInformeController::analizarSoportes`. The result is cached in the `soporte_analisis` JSON column on `Evento`, `Tarea`, and `TareaCompromiso` — the cached value is returned on subsequent calls without re-calling the API. The service URL is read from `config('services.pdf_api.url')`, set via `PDF_API_URL` env var (default: `https://kronox-pdf-api-production.up.railway.app`).
+
+`analyzeActa()` calls `POST /analyze-acta` on pdf-api to generate a two-paragraph executive summary of an acta de reunión via Gemini. It's called synchronously from `EventoController::subirActaReunion` right after the file is stored — the HTTP request to upload the acta blocks until Gemini responds, and the result is saved to `eventos.resumen_acta` (nullable text column, added in `2026_07_22_000001`). `ModalFinalizar.jsx` uploads the acta immediately on file selection (not on form submit) and shows a loading bar while waiting, so the user sees the real processing time. The generated summary is editable before finalizing and is re-sent in the `/finalizar` payload (`resumen_acta`), which persists any manual edits. `resumen_acta` is nulled from the API response for roles without `verConclusiones` (same visibility as `conclusiones`).
 
 ### Auxiliar de Informe
 

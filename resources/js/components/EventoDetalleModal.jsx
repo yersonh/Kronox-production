@@ -4,7 +4,7 @@ import {
     X, Calendar, Clock, MapPin, Building2, User, Users,
     FileText, Camera, ChevronLeft, ChevronRight, Video,
     Briefcase, Globe, Info, ClipboardList, CheckCircle, PlayCircle, Lock, XCircle,
-    ExternalLink, CheckSquare, ListTodo, CheckCheck, Download, Paperclip
+    ExternalLink, CheckSquare, ListTodo, CheckCheck, Download, Paperclip, Sparkles
 } from 'lucide-react';
 import api from '../api/axios';
 import DependenciasCell from './DependenciasCell';
@@ -221,6 +221,18 @@ export default function EventoDetalleModal({ evento, onClose, isMyEventView = fa
                                 </h4>
                                 <p className={`text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-emerald-100/90' : 'text-emerald-900'}`}>
                                     {evento.conclusiones}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Resumen del acta generado por IA */}
+                        {evento.resumen_acta && (
+                            <div className={`p-5 rounded-2xl border-2 border-dashed ${isDark ? 'bg-indigo-500/5 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'}`}>
+                                <h4 className={`text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2 ${isDark ? 'text-indigo-400/70' : 'text-indigo-600'}`}>
+                                    <Sparkles size={14} /> Resumen del Acta (IA)
+                                </h4>
+                                <p className={`text-sm leading-relaxed whitespace-pre-wrap ${isDark ? 'text-indigo-100/90' : 'text-indigo-900'}`}>
+                                    {evento.resumen_acta}
                                 </p>
                             </div>
                         )}

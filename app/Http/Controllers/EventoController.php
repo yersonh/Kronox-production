@@ -14,6 +14,7 @@ use App\Notifications\EventoCanceladoNotification;
 use App\Notifications\EventoInvitadoNotification;
 use App\Rules\ArchivoPdf;
 use App\Services\CoreApiClient;
+use App\Services\PdfApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -38,6 +39,7 @@ class EventoController extends Controller
 
         if (! $puedeVerConclusiones) {
             $arr['conclusiones'] = null;
+            $arr['resumen_acta'] = null;
         }
 
         $arr['dependencia_ids'] = $evento->dependenciaIds();
@@ -353,6 +355,7 @@ class EventoController extends Controller
 
         $request->validate([
             'conclusiones' => 'required|string',
+            'resumen_acta' => 'nullable|string',
             'asistencias' => 'nullable|array',
             'asistencias.*.persona_id' => 'required|integer',
             'asistencias.*.asistio' => 'required|boolean',
@@ -369,6 +372,7 @@ class EventoController extends Controller
             'conclusiones'  => $request->conclusiones,
             'finalizado_en' => now(),
             'en_destiempo'  => $enDestiempo,
+            ...($request->has('resumen_acta') ? ['resumen_acta' => $request->resumen_acta] : []),
         ]);
 
         if ($request->asistencias) {
@@ -477,7 +481,7 @@ class EventoController extends Controller
         ]);
     }
 
-    public function subirActaReunion(Request $request, Evento $evento)
+    public function subirActaReunion(Request $request, Evento $evento, PdfApiService $pdfApi)
     {
         $this->authorize('gestionarDocumentos', $evento);
 
@@ -491,9 +495,17 @@ class EventoController extends Controller
         }
 
         Storage::disk('contratos')->put($ruta, file_get_contents($archivo->getRealPath()));
-        $evento->update(['acta_reunion' => $ruta]);
 
-        return response()->json(['acta_reunion' => $ruta, 'nombre' => $archivo->getClientOriginalName()]);
+        $resumen = $pdfApi->analyzeActa($ruta, $archivo->getClientOriginalName());
+        $resumenActa = ($resumen['success'] ?? false) ? $resumen['resumen'] : null;
+
+        $evento->update(['acta_reunion' => $ruta, 'resumen_acta' => $resumenActa]);
+
+        return response()->json([
+            'acta_reunion' => $ruta,
+            'nombre' => $archivo->getClientOriginalName(),
+            'resumen_acta' => $resumenActa,
+        ]);
     }
 
     public function descargarActaReunion(Evento $evento)

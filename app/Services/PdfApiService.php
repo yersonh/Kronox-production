@@ -91,6 +91,30 @@ class PdfApiService
     }
 
     /**
+     * Analiza un acta de reunión y genera un resumen ejecutivo de dos párrafos.
+     * Retorna null si no se puede leer el archivo o la API falla.
+     */
+    public function analyzeActa(string $path, string $filename): ?array
+    {
+        if (!Storage::disk('contratos')->exists($path)) {
+            return null;
+        }
+
+        $contenido = Storage::disk('contratos')->get($path);
+
+        try {
+            $response = Http::timeout(60)
+                ->withHeaders($this->headers())
+                ->attach('archivo', $contenido, $filename, ['Content-Type' => 'application/pdf'])
+                ->post("{$this->baseUrl}/analyze-acta");
+
+            return $response->successful() ? $response->json() : null;
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
+    /**
      * Analiza una planilla de pago de seguridad social y extrae sus datos.
      */
     public function analyzePlanilla(string $path, string $filename): ?array

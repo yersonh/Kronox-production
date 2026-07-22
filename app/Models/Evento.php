@@ -14,7 +14,7 @@ class Evento extends Model
         'numero', 'tipo_evento_id', 'fecha_hora', 'fecha_hora_fin',
         'sala_id', 'sitio', 'tema', 'entidad', 'area',
         'responsable_id', 'descripcion',
-        'conclusiones', 'enlace_meet', 'documento_soporte', 'acta_reunion',
+        'conclusiones', 'enlace_meet', 'documento_soporte', 'acta_reunion', 'resumen_acta',
         'es_publica', 'estado', 'finalizado_en', 'user_id',
         'lista_asistencia', 'latitude', 'longitude', 'direccion',
         'notificado_pendiente_finalizar',

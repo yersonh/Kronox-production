@@ -1,7 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import api from '../api/axios';
-import { Flag, X, CheckCircle, XCircle, AlertCircle, Plus, Trash2, ClipboardList, Upload, Download, Paperclip, Camera, Image } from 'lucide-react';
+import { Flag, X, CheckCircle, XCircle, AlertCircle, Plus, Trash2, ClipboardList, Upload, Download, Paperclip, Camera, Image, Sparkles } from 'lucide-react';
+
+// Duración estimada (ms) para que la barra avance de forma continua mientras Gemini procesa el documento.
+// La barra se acerca asintóticamente al 95% y solo llega a 100% cuando la respuesta real llega.
+const DURACION_ESTIMADA_RESUMEN_MS = 9000;
 
 export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
     const { isDark } = useTheme();
@@ -25,6 +29,60 @@ export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
     const [fotos, setFotos] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Resumen del acta generado por IA (Gemini)
+    const [resumenActa, setResumenActa] = useState(evento.resumen_acta ?? '');
+    const [generandoResumen, setGenerandoResumen] = useState(false);
+    const [progresoResumen, setProgresoResumen] = useState(0);
+    const [errorResumen, setErrorResumen] = useState('');
+    const progresoIntervalRef = useRef(null);
+
+    useEffect(() => () => clearInterval(progresoIntervalRef.current), []);
+
+    const handleActaFileChange = async (e) => {
+        const f = e.target.files[0];
+        e.target.value = '';
+        if (!f) return;
+
+        setActaNombre(f.name);
+        setErrorResumen('');
+        setResumenActa('');
+        setGenerandoResumen(true);
+        setProgresoResumen(0);
+
+        const inicio = Date.now();
+        progresoIntervalRef.current = setInterval(() => {
+            const t = Date.now() - inicio;
+            // Se acerca asintóticamente al 95% mientras esperamos la respuesta real de la IA
+            const pct = 95 * (1 - Math.exp(-t / DURACION_ESTIMADA_RESUMEN_MS));
+            setProgresoResumen(pct);
+        }, 100);
+
+        try {
+            const fd = new FormData();
+            fd.append('archivo', f);
+            const res = await api.post(`/eventos/${evento.id}/acta-reunion`, fd, { headers: { 'Content-Type': undefined } });
+
+            clearInterval(progresoIntervalRef.current);
+            setProgresoResumen(100);
+
+            if (res.data.resumen_acta) {
+                setResumenActa(res.data.resumen_acta);
+            } else {
+                setErrorResumen('No se pudo generar el resumen automático. Puedes redactarlo manualmente.');
+            }
+            // El archivo ya quedó guardado en el evento; no debe volver a subirse al finalizar.
+            setActaFile(null);
+        } catch (err) {
+            clearInterval(progresoIntervalRef.current);
+            setProgresoResumen(0);
+            setErrorResumen(err.response?.data?.message || 'Error al subir el acta de reunión.');
+            setActaFile(null);
+            setActaNombre(evento.acta_reunion ? evento.acta_reunion.split('/').pop() : '');
+        } finally {
+            setTimeout(() => setGenerandoResumen(false), 400);
+        }
+    };
 
     const toggleAsistencia = (persona_id) => {
         setAsistencias(prev =>
@@ -83,6 +141,7 @@ export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
             ];
             await api.post(`/eventos/${evento.id}/finalizar`, {
                 conclusiones,
+                resumen_acta: resumenActa || null,
                 asistencias: asistenciasCompletas,
                 compromisos: compromisos.map(({ persona_id, descripcion, fecha_limite }) => ({ persona_id, descripcion, fecha_limite })),
             });
@@ -226,11 +285,52 @@ export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
                                             )}
                                         </div>
                                     )}
-                                    <label className={`flex items-center justify-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-lg text-xs font-medium transition w-full ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>
+                                    <label className={`flex items-center justify-center gap-1.5 cursor-pointer px-3 py-1.5 rounded-lg text-xs font-medium transition w-full ${generandoResumen ? 'opacity-50 pointer-events-none' : ''} ${isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>
                                         <Upload size={11} /> {actaNombre ? 'Reemplazar' : 'Seleccionar archivo'}
-                                        <input type="file" accept=".pdf,.doc,.docx" className="hidden"
-                                            onChange={e => { const f = e.target.files[0]; if (f) { setActaFile(f); setActaNombre(f.name); } }} />
+                                        <input type="file" accept=".pdf" className="hidden" disabled={generandoResumen}
+                                            onChange={handleActaFileChange} />
                                     </label>
+
+                                    {/* Barra de progreso: generación del resumen con IA */}
+                                    {generandoResumen && (
+                                        <div className="mt-3">
+                                            <div className="flex items-center gap-1.5 mb-1.5">
+                                                <Sparkles size={12} className={isDark ? 'text-indigo-400 animate-pulse' : 'text-indigo-600 animate-pulse'} />
+                                                <span className={`text-xs font-medium ${isDark ? 'text-indigo-300' : 'text-indigo-600'}`}>
+                                                    Generando resumen con IA...
+                                                </span>
+                                            </div>
+                                            <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                                                <div
+                                                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-150 ease-linear"
+                                                    style={{ width: `${progresoResumen}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {errorResumen && !generandoResumen && (
+                                        <p className={`mt-2 text-xs flex items-center gap-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                                            <AlertCircle size={11} /> {errorResumen}
+                                        </p>
+                                    )}
+
+                                    {/* Resumen generado por IA */}
+                                    {!generandoResumen && (resumenActa || evento.acta_reunion) && (
+                                        <div className="mt-3">
+                                            <label className={`text-xs font-medium mb-1.5 flex items-center gap-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                <Sparkles size={12} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
+                                                Resumen del acta (generado por IA)
+                                            </label>
+                                            <textarea
+                                                value={resumenActa}
+                                                onChange={e => setResumenActa(e.target.value)}
+                                                rows={4}
+                                                placeholder="El resumen generado por la IA aparecerá aquí. Puedes editarlo si lo necesitas."
+                                                className={`w-full rounded-xl px-3 py-2 text-xs border focus:outline-none resize-none transition ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200 focus:ring-2 focus:ring-indigo-500' : 'bg-white border-gray-200 text-gray-800 focus:ring-2 focus:ring-indigo-500'}`}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Lista de asistencia externa */}
@@ -421,7 +521,7 @@ export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
                         </button>
                         <button
                             type="submit"
-                            disabled={loading || !conclusiones.trim()}
+                            disabled={loading || generandoResumen || !conclusiones.trim()}
                             className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {loading ? (
