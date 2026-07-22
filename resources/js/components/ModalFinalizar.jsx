@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import api from '../api/axios';
-import { Flag, X, CheckCircle, XCircle, AlertCircle, Plus, Trash2, ClipboardList, Upload, Download, Paperclip, Camera, Image, Sparkles } from 'lucide-react';
+import { Flag, X, CheckCircle, XCircle, AlertCircle, Plus, Trash2, ClipboardList, Upload, Download, Paperclip, Camera, Image, Sparkles, Maximize2 } from 'lucide-react';
 
 // Duración estimada (ms) para que la barra avance de forma continua mientras Gemini procesa el documento.
 // La barra se acerca asintóticamente al 95% y solo llega a 100% cuando la respuesta real llega.
@@ -35,6 +35,7 @@ export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
     const [generandoResumen, setGenerandoResumen] = useState(false);
     const [progresoResumen, setProgresoResumen] = useState(0);
     const [errorResumen, setErrorResumen] = useState('');
+    const [resumenExpandido, setResumenExpandido] = useState(false);
     const progresoIntervalRef = useRef(null);
 
     useEffect(() => () => clearInterval(progresoIntervalRef.current), []);
@@ -318,10 +319,21 @@ export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
                                     {/* Resumen generado por IA */}
                                     {!generandoResumen && (actaNombre || evento.acta_reunion) && (
                                         <div className="mt-3">
-                                            <label className={`text-xs font-medium mb-1.5 flex items-center gap-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                <Sparkles size={12} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
-                                                Resumen del acta (generado por IA)
-                                            </label>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <label className={`text-xs font-medium flex items-center gap-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                    <Sparkles size={12} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
+                                                    Resumen del acta (generado por IA)
+                                                </label>
+                                                {resumenActa && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setResumenExpandido(true)}
+                                                        className={`flex items-center gap-1 text-xs font-medium transition ${isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'}`}
+                                                    >
+                                                        <Maximize2 size={11} /> Ampliar
+                                                    </button>
+                                                )}
+                                            </div>
                                             <textarea
                                                 value={resumenActa}
                                                 onChange={e => setResumenActa(e.target.value)}
@@ -533,6 +545,41 @@ export default function ModalFinalizar({ evento, onClose, onFinalizado }) {
                     </div>
                 </form>
             </div>
+
+            {/* Modal: resumen del acta ampliado */}
+            {resumenExpandido && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+                    <div className={`w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}>
+                        <div className={`px-6 py-4 border-b flex items-center justify-between gap-3 flex-shrink-0 ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                            <div className="flex items-center gap-2.5">
+                                <div className={`p-2 rounded-xl ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
+                                    <Sparkles size={16} className={isDark ? 'text-indigo-400' : 'text-indigo-600'} />
+                                </div>
+                                <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Resumen del acta (IA)</h3>
+                            </div>
+                            <button onClick={() => setResumenExpandido(false)} className={`p-1.5 rounded-lg transition ${isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-400 hover:bg-gray-100'}`}>
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="p-6 overflow-y-auto flex-1">
+                            <textarea
+                                value={resumenActa}
+                                onChange={e => setResumenActa(e.target.value)}
+                                rows={14}
+                                className={`w-full h-full rounded-xl px-4 py-3 text-sm leading-relaxed border focus:outline-none resize-none transition ${isDark ? 'bg-gray-900 border-gray-700 text-gray-200 focus:ring-2 focus:ring-indigo-500' : 'bg-gray-50 border-gray-200 text-gray-800 focus:ring-2 focus:ring-indigo-500'}`}
+                            />
+                        </div>
+                        <div className={`px-6 py-4 border-t flex justify-end flex-shrink-0 ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                            <button
+                                onClick={() => setResumenExpandido(false)}
+                                className="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

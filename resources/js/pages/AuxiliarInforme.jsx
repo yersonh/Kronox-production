@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Layout from '../components/Layout';
 import api from '../api/axios';
 import { useTheme } from '../hooks/useTheme';
@@ -6,8 +6,13 @@ import { exportarAuxiliarInforme } from '../utils/pdfExport';
 import {
     FileBarChart2, Calendar, Search, Download, ClipboardList,
     CheckSquare, Link2, X, AlertCircle, Clock, CheckCircle2,
-    Camera, FileText, Loader2, Info, Upload, FileCheck2, Trash2
+    Camera, FileText, Loader2, Info, Upload, FileCheck2, Trash2, Sparkles
 } from 'lucide-react';
+
+// Estimado (ms) por item con soporte que la IA debe analizar, para calcular
+// cuanto debe tardar la barra de progreso en acercarse al 95% mientras espera.
+const MS_ESTIMADO_POR_ITEM = 6000;
+const MS_ESTIMADO_BASE = 3000;
 
 const ESTADO_COLOR = {
     programado:  'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300',
@@ -45,7 +50,11 @@ export default function AuxiliarInforme() {
     const [error, setError] = useState('');
     const [savingVinculo, setSavingVinculo] = useState({});
     const [generandoPDF, setGenerandoPDF] = useState(false);
+    const [progresoPDF, setProgresoPDF] = useState(0);
     const [showAviso, setShowAviso] = useState(false);
+    const progresoPDFIntervalRef = useRef(null);
+
+    useEffect(() => () => clearInterval(progresoPDFIntervalRef.current), []);
 
     // Planillas
     const [planillas, setPlanillas] = useState([]);
@@ -143,17 +152,34 @@ export default function AuxiliarInforme() {
     const handleGenerarPDF = async () => {
         if (!datos) return;
         setGenerandoPDF(true);
+        setProgresoPDF(0);
+
+        const itemsConSoporte = (datos.items ?? []).filter(it => it.tiene_soporte).length;
+        const duracionEstimada = MS_ESTIMADO_BASE + itemsConSoporte * MS_ESTIMADO_POR_ITEM;
+        const inicio = Date.now();
+        progresoPDFIntervalRef.current = setInterval(() => {
+            const t = Date.now() - inicio;
+            const pct = 95 * (1 - Math.exp(-t / duracionEstimada));
+            setProgresoPDF(pct);
+        }, 150);
+
         try {
             await exportarAuxiliarInforme(datos, desde, hasta);
+            setProgresoPDF(100);
         } catch (err) {
             console.error('Error generando PDF:', err);
         } finally {
-            setGenerandoPDF(false);
-            setShowAviso(false);
+            clearInterval(progresoPDFIntervalRef.current);
+            setTimeout(() => {
+                setGenerandoPDF(false);
+                setShowAviso(false);
+                setProgresoPDF(0);
+            }, 400);
         }
     };
 
     const vinculados = datos?.items?.filter(it => it.obligacion_id) ?? [];
+    const itemsConSoporte = datos?.items?.filter(it => it.tiene_soporte).length ?? 0;
     const byFechaDesc = (a, b) => new Date(b.fecha ?? 0) - new Date(a.fecha ?? 0);
     const grupos = {
         evento:     (datos?.items?.filter(it => it.tipo === 'evento') ?? []).sort(byFechaDesc),
@@ -370,11 +396,33 @@ export default function AuxiliarInforme() {
                 )}
             </div>
 
-            {/* Modal aviso antes de generar */}
+            {/* Modal aviso antes de generar / carga mientras la IA arma el informe */}
             {showAviso && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !generandoPDF && setShowAviso(false)} />
                     <div className={`relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+                        {generandoPDF ? (
+                            <div className="px-6 py-10 text-center">
+                                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
+                                    <Sparkles size={28} className={`${isDark ? 'text-indigo-400' : 'text-indigo-600'} animate-pulse`} />
+                                </div>
+                                <h3 className={`font-semibold text-base mb-1.5 ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                                    Generando el informe con IA...
+                                </h3>
+                                <p className={`text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    {itemsConSoporte > 0
+                                        ? `Analizando ${itemsConSoporte} soporte${itemsConSoporte > 1 ? 's' : ''} con IA y armando el PDF. Esto puede tardar unos minutos, no cierres esta ventana.`
+                                        : 'Armando el PDF del informe. Esto solo tomará un momento.'}
+                                </p>
+                                <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                                    <div
+                                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-150 ease-linear"
+                                        style={{ width: `${progresoPDF}%` }}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <>
                         <div className={`px-6 py-4 border-b flex items-center gap-3 ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
                             <AlertCircle size={20} className="text-amber-500 flex-shrink-0" />
                             <h3 className={`font-semibold text-base ${isDark ? 'text-white' : 'text-gray-800'}`}>Aviso importante</h3>
@@ -398,6 +446,8 @@ export default function AuxiliarInforme() {
                                     : <><Download size={14} /> Entendido, generar</>}
                             </button>
                         </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
