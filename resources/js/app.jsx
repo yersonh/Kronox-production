@@ -67,6 +67,7 @@ import MapaCalor from './pages/admin/MapaCalor';
 import GestionContratos from './pages/GestionContratos';
 import CambiarContrasena from './pages/CambiarContrasena';
 import Perfil from './pages/Perfil';
+import Ayuda from './pages/Ayuda';
 
 function App() {
     return (
@@ -99,6 +100,7 @@ function App() {
                 <Route path="/admin/entidad" element={<PrivateRoute><EntidadConfig /></PrivateRoute>} />
                 <Route path="/mapa-eventos" element={<PrivateRoute><MapaEventos /></PrivateRoute>} />
                 <Route path="/perfil" element={<PrivateRoute><Perfil /></PrivateRoute>} />
+                <Route path="/ayuda" element={<PrivateRoute><Ayuda /></PrivateRoute>} />
                 <Route path="/mi-calendario" element={<PrivateRoute><CalendarioFuncionario /></PrivateRoute>} />
                 <Route path="/mis-eventos" element={<PrivateRoute><MisEventos /></PrivateRoute>} />
                 <Route path="/mis-tareas" element={<PrivateRoute><MisTareas /></PrivateRoute>} />

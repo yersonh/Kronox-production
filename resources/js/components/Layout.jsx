@@ -5,7 +5,7 @@ import {
     LayoutDashboard, Calendar, ClipboardList, CheckSquare, User,
     Building2, FolderOpen, Users, Target, LogOut, Menu, X, AlertTriangle,
     UserCog, Layers, MapPin, Landmark, FileText, FileBarChart2, ShieldAlert, PieChart,
-    ScrollText, Gauge, Flame
+    ScrollText, Gauge, Flame, HelpCircle
 } from 'lucide-react';
 import api from '../api/axios';
 import storage from '../api/storage';
@@ -76,6 +76,7 @@ export default function Layout({ children }) {
         { path: '/auxiliar-informe', label: 'Auxiliar Informe', icon: <FileBarChart2 size={18} />, roles: ['contratista'] },
         { path: '/gestion-contratos', label: 'Gestión Contratos', icon: <ScrollText size={18} />, roles: ['supervisor_contratos'] },
         { path: '/admin/contratistas', label: 'Contratistas', icon: <Users size={18} />, roles: ['supervisor_contratos'] },
+        { path: '/ayuda', label: 'Ayuda', icon: <HelpCircle size={18} />, roles: ['super_admin', 'admin', 'digitador', 'funcionario', 'contratista'] },
     ];
 
     const parametrizacionItems = [

@@ -24,6 +24,7 @@ use App\Http\Controllers\EntidadConfigController;
 use App\Http\Controllers\AuxiliarInformeController;
 use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\EstadisticasController;
+use App\Http\Controllers\ManualUsuarioController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PersonaBusquedaController;
 
@@ -75,6 +76,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('perfil/obligaciones', [PerfilController::class, 'crearObligacion']);
         Route::put('perfil/obligaciones/{obligacion}', [PerfilController::class, 'actualizarObligacion']);
         Route::delete('perfil/obligaciones/{obligacion}', [PerfilController::class, 'eliminarObligacion']);
+
+        // Manual de usuario (PDF según el rol del usuario autenticado)
+        Route::get('manual-usuario', [ManualUsuarioController::class, 'descargar']);
 
         // Parámetros base — dependencias/sectores son catálogos del Core (solo lectura aquí);
         // niveles de cargo también vive en el Core pero ya admite escritura (ver abajo).
