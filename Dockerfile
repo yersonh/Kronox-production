@@ -1,6 +1,8 @@
 # ─── Stage 1: Build frontend assets ────────────────────────────────────────────
 FROM node:22-alpine AS node-builder
 WORKDIR /app
+ARG VITE_MAPTILER_KEY
+ENV VITE_MAPTILER_KEY=$VITE_MAPTILER_KEY
 COPY package*.json ./
 RUN npm ci
 COPY . .
