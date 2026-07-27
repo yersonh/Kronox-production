@@ -21,6 +21,8 @@ USER root
 COPY . .
 COPY --from=node-builder /app/public/build ./public/build
 
+RUN install-php-extensions gd
+
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress \
     && mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \

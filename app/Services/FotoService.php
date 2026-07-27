@@ -41,6 +41,10 @@ class FotoService
 
     private function thumbnail(string $path, string $ext): string
     {
+        if (!extension_loaded('gd')) {
+            return file_get_contents($path);
+        }
+
         $src = match($ext) {
             'jpg', 'jpeg' => @imagecreatefromjpeg($path),
             'png'         => @imagecreatefrompng($path),
